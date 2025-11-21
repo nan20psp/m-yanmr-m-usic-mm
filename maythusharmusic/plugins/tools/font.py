@@ -2,7 +2,7 @@ from pyrogram import filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from maythusharmusic import app
-from maythusharmusic.utils.branded_font import Fonts
+from maythusharmusic.utils.pisces_font import Fonts
 
 
 @app.on_message(filters.command(["font", "fonts"]))
