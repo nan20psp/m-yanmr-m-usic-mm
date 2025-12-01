@@ -5,7 +5,7 @@ from pyrogram.enums import ChatMembersFilter
 from pyrogram.errors import FloodWait
 
 from maythusharmusic import app
-from comfig import OWNER_ID
+from config import OWNER_ID
 #from maythusharmusic.misc import SUDOERS
 from maythusharmusic.utils.database import (
     get_active_chats,
