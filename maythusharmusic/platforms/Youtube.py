@@ -27,7 +27,7 @@ from maythusharmusic import LOGGER
 #logger = logging.getLogger(__name__)
 
 API_URL = "https://teaminflex.xyz"  # Change to your API server URL
-API_KEY = "INFLEX68381428D"
+API_KEY = "INFLEX60997428D"
 
 # ==============================================
 # 🎵 AUDIO DOWNLOAD
@@ -480,7 +480,7 @@ class YouTubeAPI:
                 {
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": "opus", # .opus file ကို ထုတ်ပါမယ်
-                    "preferredquality": "512",
+                    "preferredquality": "510",
                 }
             ]
             final_file_path = os.path.join(DOWNLOAD_DIR, f"{file_name_base}.opus")
