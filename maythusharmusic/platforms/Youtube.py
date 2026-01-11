@@ -27,7 +27,7 @@ from maythusharmusic import LOGGER
 #logger = logging.getLogger(__name__)
 
 API_URL = "https://teaminflex.xyz"  # Change to your API server URL
-API_KEY = "INFLEX60997428D"
+API_KEY = "INFLEX59804028D"
 
 # ==============================================
 # 🎵 AUDIO DOWNLOAD
