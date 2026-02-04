@@ -55,10 +55,6 @@ async def play_commnd(
     url,
     fplay,
 ):
-    # --- (START: AUTO-CLAIM LOGIC) ---
-    # Group တစ်ခုထဲမှာ Bot အများကြီးရှိရင် တစ်ကောင်ပဲ အလုပ်လုပ်စေရန်
-    if not await is_active_bot_auto(message.chat.id, client.me.id):
-        return
         
     mystic = await message.reply_text(
         _["play_2"].format(channel) if channel else _["play_1"]
