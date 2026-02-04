@@ -5,8 +5,7 @@ import config
 from maythusharmusic import YouTube, app
 from maythusharmusic.core.call import pisces
 from maythusharmusic.misc import db
-# --- (၁) Database မှ Auto-Claim function ကို Import လုပ်ပါ ---
-from maythusharmusic.utils.database import get_loop, is_active_bot_auto
+from maythusharmusic.utils.database import get_loop
 from maythusharmusic.utils.decorators import AdminRightsCheck
 from maythusharmusic.utils.inline import close_markup, stream_markup
 from maythusharmusic.utils.stream.autoclear import auto_clean
@@ -19,11 +18,6 @@ from config import BANNED_USERS
 )
 @AdminRightsCheck
 async def skip(cli, message: Message, _, chat_id):
-    # --- (၂) AUTO-CLAIM CHECK: Group တစ်ခုတွင် Bot တစ်ကောင်တည်းသာ အလုပ်လုပ်စေရန် ---
-    if not await is_active_bot_auto(message.chat.id, cli.me.id):
-        return
-    # -------------------------------------------------------------------------
-
     if not len(message.command) < 2:
         loop = await get_loop(chat_id)
         if loop != 0:
@@ -95,7 +89,6 @@ async def skip(cli, message: Message, _, chat_id):
                 return await pisces.stop_stream(chat_id)
             except:
                 return
-    
     queued = check[0]["file"]
     title = (check[0]["title"]).title()
     user = check[0]["by"]
@@ -109,7 +102,6 @@ async def skip(cli, message: Message, _, chat_id):
         db[chat_id][0]["seconds"] = check[0]["old_second"]
         db[chat_id][0]["speed_path"] = None
         db[chat_id][0]["speed"] = 1.0
-    
     if "live_" in queued:
         n, link = await YouTube.video(videoid, True)
         if n == 0:
