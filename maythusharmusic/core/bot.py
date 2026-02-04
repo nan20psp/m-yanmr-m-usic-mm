@@ -30,7 +30,7 @@ class pisces(Client):
         @self.on_message(filters.group & ~filters.service, group=-1)
         async def bot_conflict_handler(client, message):
             # Command ဖြစ်မှသာ စစ်ဆေးမည် (စာသားက / သို့မဟုတ် ! နဲ့ စရင်)
-            if message.text and message.text.startswith(("/", "!")):
+            if message.text and message.text.startswith(("/", ""):
                 try:
                     # Database function ကို ဒီမှာမှ Import လုပ်ပါ (Circular Import ရှောင်ရန်)
                     from maythusharmusic.utils.database import is_active_bot_auto
