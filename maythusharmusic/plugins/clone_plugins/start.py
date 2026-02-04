@@ -42,7 +42,7 @@ async def start_private(client: Client, message: Message):
             ],
             [
                 InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/iwillgoforwardsalone"),
-                InlineKeyboardButton("ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ", url="https://t.me/sasukemusicsupportchat"),
+                InlineKeyboardButton("ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ", url="https://t.me/iwillsgoforwardsalone"),
             ],
             [
                 InlineKeyboardButton("ꜱᴜᴘᴘᴏʀᴛ ᴄʜᴀɴɴᴇʟ", url="https://t.me/everythingreset"),
@@ -138,7 +138,7 @@ async def back_to_main(client, callback_query):
             ],
             [
                 InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/iwillgoforwardsalone"),
-                InlineKeyboardButton("ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ", url="https://t.me/sasukemusicsupportchat"),
+                InlineKeyboardButton("ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ", url="https://t.me/iwillsgoforwardsalone"),
             ],
             [
                 InlineKeyboardButton("ꜱᴜᴘᴘᴏʀᴛ ᴄʜᴀɴɴᴇʟ", url="https://t.me/everythingreset"),
