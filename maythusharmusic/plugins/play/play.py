@@ -44,7 +44,6 @@ from config import BANNED_USERS, lyrical
     & ~BANNED_USERS
 )
 @PlayWrapper
-@ActiveBotAuto
 async def play_commnd(
     client,
     message: Message,
