@@ -28,16 +28,14 @@ class pisces(Client):
         # Group ထဲမှာ Command တစ်ခုတက်လာတိုင်း တခြား Plugin တွေဆီ မရောက်ခင် 
         # ဒီကောင်က အရင်စစ်ပါမယ် (group=-1 ကြောင့် အရင်ဆုံး အလုပ်လုပ်တာပါ)
         @self.on_message(filters.group & ~filters.service, group=-1)
+        @self.on_message(filters.group & ~filters.service, group=-1)
         async def bot_conflict_handler(client, message):
-            # Command ဖြစ်မှသာ စစ်ဆေးမည် (စာသားက / သို့မဟုတ် ! နဲ့ စရင်)
-            if message.text and message.text.startswith(("/"):
+            # message.text ရှိမရှိနဲ့ / သို့မဟုတ် ! နဲ့ စ-မစ စစ်တာပါ
+            if message.text and message.text.startswith(("/", "")):
                 try:
-                    # Database function ကို ဒီမှာမှ Import လုပ်ပါ (Circular Import ရှောင်ရန်)
                     from maythusharmusic.utils.database import is_active_bot_auto
                     
-                    # ဒီ Group မှာ ငါက Active ဖြစ်နေလား စစ်မယ်
                     if not await is_active_bot_auto(message.chat.id, client.id):
-                        # ငါက Active မဟုတ်ရင် ဒီ Message ကို ဆက်မလုပ်နဲ့တော့ (Plugin တွေဆီ မပို့တော့ဘူး)
                         message.stop_propagation()
                 except Exception as e:
                     LOGGER(__name__).error(f"Conflict Handler Error: {e}")
