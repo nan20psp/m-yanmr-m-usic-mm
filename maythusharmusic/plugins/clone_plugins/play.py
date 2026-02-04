@@ -1,14 +1,17 @@
 import random
 import string
 
-from pyrogram import filters
-from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message, InlineKeyboardButton
+from pyrogram.enums import ChatMemberStatus
+from pyrogram.errors import UserNotParticipant
 from pytgcalls.exceptions import NoActiveGroupCall
 
 import config
 from maythusharmusic import Apple, Resso, SoundCloud, Spotify, Telegram, YouTube, app
 from maythusharmusic.core.call import pisces
 from maythusharmusic.utils import seconds_to_min, time_to_seconds
+from maythusharmusic.utils.database import is_clones_active
 from maythusharmusic.utils.channelplay import get_channeplayCB
 from maythusharmusic.utils.decorators.language import languageCB
 from maythusharmusic.utils.decorators.play import PlayWrapper
@@ -21,12 +24,10 @@ from maythusharmusic.utils.inline import (
     track_markup,
 )
 from maythusharmusic.utils.logger import play_logs
-#from maythusharmusic.utils.activebotauto import ActiveBotAuto
 from maythusharmusic.utils.stream.stream import stream
 from config import BANNED_USERS, lyrical
 
-
-@app.on_message(
+@Client.on_message(
     filters.command(
         [
             "play",
@@ -55,7 +56,53 @@ async def play_commnd(
     url,
     fplay,
 ):
-        
+    # --- (၀) CLONE BOT ACTIVE STATUS CHECK ---
+    if not await is_clones_active():
+        return await message.reply_text(
+                "> •**𝙎𝙮𝙨𝙩𝙚𝙢 𝙈𝙖𝙞𝙣𝙩𝙚𝙣𝙖𝙣𝙘𝙚**\n"
+                ">\n"
+                "> •𝘾𝙡𝙤𝙣𝙚 𝙗𝙤𝙩 စနစ်ကို 𝙊𝙬𝙣𝙚𝙧 မှ ယာယီပိတ်ထားပါသည်။\n"
+                "> •ခေတ္တစောင့်ဆိုင်းပြီးမှ ပြန်လည်ကြိုးစားပါ။"
+            )
+    
+    # --- (၁) MAIN BOT ADMIN CHECK (DIRECT LOGIC) ---
+    # Clone Bot ဖြစ်မှသာ စစ်ဆေးမည်
+    if client.me.id != app.me.id:
+        try:
+            # Main Bot အချက်အလက်ရယူခြင်း
+            if not app.me:
+                await app.get_me()
+            
+            main_bot_id = app.me.id
+            main_bot_username = app.me.username
+
+            try:
+                # Clone Bot (client) ကနေ Main Bot ကို Group ထဲမှာ လိုက်ရှာခြင်း
+                member = await client.get_chat_member(chat_id, main_bot_id)
+                
+                # Admin သို့မဟုတ် Owner မဟုတ်ရင် တားမည်
+                if member.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                    return await message.reply_text(
+                        f">•**ᴍᴀɪɴ ᴍᴜꜱɪᴄ ʙᴏᴛ ᴀᴅᴍɪɴ ʀᴇǫᴜɪʀᴇᴅ.**\n"
+                        f"•ᴛᴏ ᴜꜱᴇ ᴛʜᴇ ᴄʟᴏɴᴇ ʙᴏᴛ, ᴛʜᴇ ᴏʀɪɢɪɴᴀʟ ʙᴏᴛ, @{main_bot_username} , must be appointed as <b>ᴀᴅᴍɪɴ</b> ɪɴ ᴛʜɪꜱ ɢʀᴏᴜᴘ.",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(" Aᴅᴅ ᴍᴀɪɴ ʙᴏᴛ & ᴘʀᴏᴍᴏᴛᴇ ", url=f"https://t.me/{main_bot_username}?startgroup=s&admin=delete_messages+manage_video_chats+pin_messages+invite_users+ban_users")]
+                        ])
+                    )
+                    
+            except UserNotParticipant:
+                # Main Bot Group ထဲမှာ လုံးဝမရှိရင် တားမည်
+                return await message.reply_text(
+                    f">•**ᴍᴀɪɴ ʙᴏᴛ ᴍɪꜱꜱɪɴɢ**\n"
+                    f"•ᴛᴏ ᴜꜱᴇ ᴛʜᴇ ᴄʟᴏɴᴇ ʙᴏᴛ, ᴀᴅᴅ ᴛʜᴇ ᴏʀɪɢɪɴᴀʟ ʙᴏᴛ, @{main_bot_username} to this Group and give it <b>ᴀᴅᴍɪɴ</b> status.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(" Aᴅᴅ ᴍᴀɪɴ ʙᴏᴛ ", url=f"https://t.me/{main_bot_username}?startgroup=s&admin=delete_messages+manage_video_chats+pin_messages+invite_users+ban_users")]
+                    ])
+                )
+        except Exception as e:
+            print(f"Main Bot Check Error: {e}")
+    # -----------------------------------------------------------
+
     mystic = await message.reply_text(
         _["play_2"].format(channel) if channel else _["play_1"]
     )
@@ -356,15 +403,6 @@ async def play_commnd(
                     _["play_13"],
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
-        
-        # --- START: MODIFICATION ---
-        try:
-            title = details.get("title", "သီချင်း") 
-            await mystic.edit_text(f"📥 Download ဆွဲနေပါသည်: {title}")
-        except Exception as e:
-            pass 
-        # --- END: MODIFICATION ---
-            
         try:
             await stream(
                 _,
@@ -444,7 +482,7 @@ async def play_commnd(
                 return await play_logs(message, streamtype=f"URL Searched Inline")
 
 
-@app.on_callback_query(filters.regex("MusicStream") & ~BANNED_USERS)
+@Client.on_callback_query(filters.regex("MusicStream") & ~BANNED_USERS)
 @languageCB
 async def play_music(client, CallbackQuery, _):
     callback_data = CallbackQuery.data.strip()
@@ -472,15 +510,6 @@ async def play_music(client, CallbackQuery, _):
         details, track_id = await YouTube.track(vidid, True)
     except:
         return await mystic.edit_text(_["play_3"])
-
-    # --- START: MODIFICATION ---
-    try:
-        title = details.get("title", "သီချင်း")
-        await mystic.edit_text(f"📥 Download ဆွဲနေပါသည်: {title}")
-    except Exception as e:
-        pass
-    # --- END: MODIFICATION ---
-
     if details["duration_min"]:
         duration_sec = time_to_seconds(details["duration_min"])
         if duration_sec > config.DURATION_LIMIT:
@@ -522,7 +551,7 @@ async def play_music(client, CallbackQuery, _):
     return await mystic.delete()
 
 
-@app.on_callback_query(filters.regex("AnonymousAdmin") & ~BANNED_USERS)
+@Client.on_callback_query(filters.regex("AnonymousAdmin") & ~BANNED_USERS)
 async def piyush_check(client, CallbackQuery):
     try:
         await CallbackQuery.answer(
@@ -533,7 +562,7 @@ async def piyush_check(client, CallbackQuery):
         pass
 
 
-@app.on_callback_query(filters.regex("piscesPlaylists") & ~BANNED_USERS)
+@Client.on_callback_query(filters.regex("piscesPlaylists") & ~BANNED_USERS)
 @languageCB
 async def play_playlists_command(client, CallbackQuery, _):
     callback_data = CallbackQuery.data.strip()
@@ -620,7 +649,7 @@ async def play_playlists_command(client, CallbackQuery, _):
     return await mystic.delete()
 
 
-@app.on_callback_query(filters.regex("slider") & ~BANNED_USERS)
+@Client.on_callback_query(filters.regex("slider") & ~BANNED_USERS)
 @languageCB
 async def slider_queries(client, CallbackQuery, _):
     callback_data = CallbackQuery.data.strip()
@@ -681,4 +710,4 @@ async def slider_queries(client, CallbackQuery, _):
         )
         return await CallbackQuery.edit_message_media(
             media=med, reply_markup=InlineKeyboardMarkup(buttons)
-)
+        )
