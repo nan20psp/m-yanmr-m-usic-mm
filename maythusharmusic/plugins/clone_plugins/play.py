@@ -11,7 +11,7 @@ import config
 from maythusharmusic import Apple, Resso, SoundCloud, Spotify, Telegram, YouTube, app
 from maythusharmusic.core.call import pisces
 from maythusharmusic.utils import seconds_to_min, time_to_seconds
-from maythusharmusic.utils.database import is_clones_active, is_active_bot_auto
+from maythusharmusic.utils.database import is_clones_active
 from maythusharmusic.utils.channelplay import get_channeplayCB
 from maythusharmusic.utils.decorators.language import languageCB
 from maythusharmusic.utils.decorators.play import PlayWrapper
@@ -46,7 +46,6 @@ from config import BANNED_USERS, lyrical
     & ~BANNED_USERS
 )
 @PlayWrapper
-@ActiveBotAuto
 async def play_commnd(
     client,
     message: Message,
