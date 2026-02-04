@@ -10,7 +10,7 @@ from maythusharmusic.utils.decorators import AdminRightsCheck
 from maythusharmusic.utils.inline import close_markup, stream_markup
 from maythusharmusic.utils.stream.autoclear import auto_clean
 from maythusharmusic.utils.thumbnails import get_thumb
-from maythusharmusic.utils.activebotauto import ActiveBotAuto
+#from maythusharmusic.utils.activebotauto import ActiveBotAuto
 from config import BANNED_USERS
 
 
@@ -18,7 +18,6 @@ from config import BANNED_USERS
     filters.command(["skip", "cskip", "next", "cnext"]) & filters.group & ~BANNED_USERS
 )
 @AdminRightsCheck
-@ActiveBotAuto
 async def skip(cli, message: Message, _, chat_id):
     if not len(message.command) < 2:
         loop = await get_loop(chat_id)
