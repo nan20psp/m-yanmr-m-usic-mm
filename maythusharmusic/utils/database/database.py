@@ -1,5 +1,6 @@
 #database.py
 import random
+from datetime import datetime
 import string
 import time
 from typing import Dict, List, Union, Any
@@ -8,6 +9,7 @@ from maythusharmusic import userbot
 from config import CLEANMODE_DELETE_MINS
 from maythusharmusic.core.mongo import mongodb, pymongodb
 
+active_clones_db = mongodb.active_clones
 authdb = mongodb.adminauth
 authuserdb = mongodb.authuser
 autoenddb = mongodb.autoend
@@ -67,15 +69,16 @@ audio = {}
 video = {}
 
 
-from datetime import datetime
 
 async def is_active_bot_auto(chat_id: int, bot_id: int) -> bool:
-    # 1. Database မှာ လက်ရှိ group အတွက် ဘယ်သူ့ကို lock ချထားလဲ ရှာမယ်
-    # 'active_clones' collection ကို သုံးထားတယ်လို့ ယူဆပါတယ်
+    """
+    Group တစ်ခုတွင် Bot တစ်ကောင်တည်းသာ အလုပ်လုပ်စေရန် Lock ချပေးသည့် စနစ်။
+    """
+    # ၁။ လက်ရှိ group အတွက် ဘယ် bot က lock ယူထားလဲ ရှာမယ်
     active_data = await active_clones_db.find_one({"chat_id": chat_id})
     
     if not active_data:
-        # 2. ဘယ် bot မှ မရှိသေးရင် အခု command လက်ခံရတဲ့ bot က နေရာဦးမယ်
+        # ၂။ ဘယ်သူမှ မရှိသေးရင် အခု command လက်ခံရတဲ့ bot က 'Active' အဖြစ် နေရာဦးလိုက်မယ်
         await active_clones_db.update_one(
             {"chat_id": chat_id},
             {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
@@ -83,21 +86,21 @@ async def is_active_bot_auto(chat_id: int, bot_id: int) -> bool:
         )
         return True
 
-    # 3. Lock ချထားတဲ့ Bot ID နဲ့ ကိုယ့် ID တူရင် အလုပ်လုပ်ခွင့်ပေးမယ်
+    # ၃။ Lock ယူထားတဲ့ Bot ID နဲ့ လက်ရှိ Bot ID တူရင် အလုပ်လုပ်မယ်
     if active_data["bot_id"] == bot_id:
-        # Last active အချိန်ကို update လုပ်သွားမယ်
+        # အလုပ်လုပ်တိုင်း နောက်ဆုံး အလုပ်လုပ်တဲ့ အချိန်ကို update လုပ်မယ်
         await active_clones_db.update_one(
             {"chat_id": chat_id},
             {"$set": {"last_active": datetime.now()}}
         )
         return True
     
-    # 4. (အပိုဆောင်း) Lock ချထားတဲ့ Bot က Offline ဖြစ်နေတာ ၂၄ နာရီကျော်ရင် Lock ဖြုတ်ပေးမယ်
+    # ၄။ (Fallback) Lock ယူထားတဲ့ Bot က Offline ဖြစ်နေတာ ၂၄ နာရီကျော်ရင် 
+    # တခြား Bot တစ်ကောင်က နေရာလုခွင့်ပေးမယ်
     last_active = active_data.get("last_active")
     if last_active:
-        from datetime import timezone
         diff = datetime.now() - last_active
-        if diff.total_seconds() > 86400: # 24 နာရီ
+        if diff.total_seconds() > 86400: # 24 နာရီ (စက္ကန့်ဖြင့်)
             await active_clones_db.update_one(
                 {"chat_id": chat_id},
                 {"$set": {"bot_id": bot_id, "last_active": datetime.now()}}
@@ -105,7 +108,6 @@ async def is_active_bot_auto(chat_id: int, bot_id: int) -> bool:
             return True
 
     return False
-
 
 # --- (Function (၂) - get_yt_cache) ---
 async def get_yt_cache(key: str) -> Union[dict, None]:
