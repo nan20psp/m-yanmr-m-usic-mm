@@ -11,7 +11,7 @@ import config
 from maythusharmusic import Apple, Resso, SoundCloud, Spotify, Telegram, YouTube, app
 from maythusharmusic.core.call import pisces
 from maythusharmusic.utils import seconds_to_min, time_to_seconds
-from maythusharmusic.utils.database import is_clones_active, is_active_bot_auto
+from maythusharmusic.utils.database import is_clones_active
 from maythusharmusic.utils.channelplay import get_channeplayCB
 from maythusharmusic.utils.decorators.language import languageCB
 from maythusharmusic.utils.decorators.play import PlayWrapper
@@ -102,8 +102,6 @@ async def play_commnd(
         except Exception as e:
             print(f"Main Bot Check Error: {e}")
     # -----------------------------------------------------------
-    if not await is_active_bot_auto(message.chat.id, client.me.id):
-        return
 
     mystic = await message.reply_text(
         _["play_2"].format(channel) if channel else _["play_1"]
