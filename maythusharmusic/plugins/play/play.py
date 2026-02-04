@@ -10,6 +10,7 @@ from maythusharmusic import Apple, Resso, SoundCloud, Spotify, Telegram, YouTube
 from maythusharmusic.core.call import pisces
 from maythusharmusic.utils import seconds_to_min, time_to_seconds
 from maythusharmusic.utils.channelplay import get_channeplayCB
+from maythusharmusic.utils.database import is_active_bot_auto
 from maythusharmusic.utils.decorators.language import languageCB
 from maythusharmusic.utils.decorators.play import PlayWrapper
 from maythusharmusic.utils.formatters import formats
@@ -54,6 +55,11 @@ async def play_commnd(
     url,
     fplay,
 ):
+    # --- (START: AUTO-CLAIM LOGIC) ---
+    # Group တစ်ခုထဲမှာ Bot အများကြီးရှိရင် တစ်ကောင်ပဲ အလုပ်လုပ်စေရန်
+    if not await is_active_bot_auto(message.chat.id, client.me.id):
+        return
+        
     mystic = await message.reply_text(
         _["play_2"].format(channel) if channel else _["play_1"]
     )
