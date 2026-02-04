@@ -70,21 +70,41 @@ video = {}
 from datetime import datetime
 
 async def is_active_bot_auto(chat_id: int, bot_id: int) -> bool:
-    print(f"DEBUG: Checking Bot {bot_id} in Chat {chat_id}") # ဒါလေး ထည့်လိုက်ပါ
+    # 1. Database မှာ လက်ရှိ group အတွက် ဘယ်သူ့ကို lock ချထားလဲ ရှာမယ်
+    # 'active_clones' collection ကို သုံးထားတယ်လို့ ယူဆပါတယ်
     active_data = await active_clones_db.find_one({"chat_id": chat_id})
     
     if not active_data:
-        print("DEBUG: No active bot found. Claiming...")
+        # 2. ဘယ် bot မှ မရှိသေးရင် အခု command လက်ခံရတဲ့ bot က နေရာဦးမယ်
         await active_clones_db.update_one(
             {"chat_id": chat_id},
             {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
             upsert=True
         )
         return True
+
+    # 3. Lock ချထားတဲ့ Bot ID နဲ့ ကိုယ့် ID တူရင် အလုပ်လုပ်ခွင့်ပေးမယ်
+    if active_data["bot_id"] == bot_id:
+        # Last active အချိန်ကို update လုပ်သွားမယ်
+        await active_clones_db.update_one(
+            {"chat_id": chat_id},
+            {"$set": {"last_active": datetime.now()}}
+        )
+        return True
     
-    result = active_data["bot_id"] == bot_id
-    print(f"DEBUG: Active Bot is {active_data['bot_id']}. Result: {result}")
-    return result
+    # 4. (အပိုဆောင်း) Lock ချထားတဲ့ Bot က Offline ဖြစ်နေတာ ၂၄ နာရီကျော်ရင် Lock ဖြုတ်ပေးမယ်
+    last_active = active_data.get("last_active")
+    if last_active:
+        from datetime import timezone
+        diff = datetime.now() - last_active
+        if diff.total_seconds() > 86400: # 24 နာရီ
+            await active_clones_db.update_one(
+                {"chat_id": chat_id},
+                {"$set": {"bot_id": bot_id, "last_active": datetime.now()}}
+            )
+            return True
+
+    return False
 
 
 # --- (Function (၂) - get_yt_cache) ---
