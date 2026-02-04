@@ -51,55 +51,50 @@ async def auto_check_main_bot(clone_client):
 
 @app.on_message(filters.command("clone") & filters.private)
 async def clone_txt(client, message: Message):
-    # Variable Initialization (Error ကာကွယ်ရန်)
-    bot_token = None
-    
     try:
-        try:
-            from maythusharmusic.utils.database import save_clone, get_clone_by_user, is_clones_active
-        except ImportError:
-            return await message.reply_text("❌ Database Error: Module Import Failed")
-
+        from maythusharmusic.utils.database import save_clone, get_clones, is_clones_active
+        
         # --- (၁) SYSTEM ON/OFF CHECK ---
         if not await is_clones_active():
-            return await message.reply_text(
-                "> •**𝙎𝙮𝙨𝙩𝙚𝙢 𝙈𝙖𝙞𝙣𝙩𝙚𝙣𝙖𝙣𝙘𝙚**\n"
-                ">\n"
-                "> •𝘾𝙡𝙤𝙣𝙚 𝙗𝙤𝙩 စနစ်ကို 𝙊𝙬𝙣𝙚𝙧 မှ ယာယီပိတ်ထားပါသည်။\n"
-                "> •ခေတ္တစောင့်ဆိုင်းပြီးမှ ပြန်လည်ကြိုးစားပါ။"
-            )
-        # -----------------------------
+            return await message.reply_text("❌ Clone bot စနစ်ကို Owner မှ ယာယီပိတ်ထားပါသည်။")
 
-        # --- (၂) ONE USER ONE BOT LIMIT CHECK ---
         user_id = message.from_user.id
-        existing_clone = await get_clone_by_user(user_id)
         
-        if existing_clone:
-            bot_username = existing_clone.get("bot_username", "Unknown")
-            bot_token_existing = existing_clone.get("bot_token", "")
+        # --- (၂) 3 BOTS LIMIT CHECK ---
+        all_clones = await get_clones()
+        # User ပိုင်တဲ့ bot တွေကို စစ်ထုတ်ခြင်း
+        user_clones = [c for c in all_clones if c.get("user_id") == user_id]
+        
+        if len(user_clones) >= 3:
+            bot_list = "\n".join([f"• @{c.get('bot_username')} (`/delclone {c.get('bot_token')}`)" for c in user_clones])
             return await message.reply_text(
-                f"𝗡𝗼𝘁𝗶𝗰 𝗙𝗼𝗿 𝗨𝘀𝗲𝗿𝘀\n\n"
-                f"𝙔𝙤𝙪 𝙖𝙡𝙧𝙚𝙖𝙙𝙮 𝙝𝙖𝙫𝙚 𝙖 𝘾𝙡𝙤𝙣𝙚 𝘽𝙤𝙩.\n"
-                f"𝗕𝗼𝘁 : @{bot_username}\n\n"
-                f"𝙄𝙛 𝙮𝙤𝙪 𝙬𝙖𝙣𝙩 𝙩𝙤 𝙘𝙧𝙚𝙖𝙩𝙚 𝙖 𝙣𝙚𝙬 𝙤𝙣𝙚, 𝙙𝙚𝙡𝙚𝙩𝙚 𝙩𝙝𝙚 𝙚𝙭𝙞𝙨𝙩𝙞𝙣𝙜 𝘽𝙤𝙩 𝙛𝙞𝙧𝙨𝙩.\n"
-                f"><code>/delclone {bot_token_existing}</code>"
+                f"⚠️ **Limit Reached!**\n\n"
+                f"သင်သည် Clone Bot (၃) ခုထက်ပို၍ ဖန်တီး၍မရပါ။\n"
+                f"လက်ရှိသင့် Bot များမှာ -\n{bot_list}\n\n"
+                f"အသစ်ပြုလုပ်လိုပါက ရှိပြီးသားတစ်ခုကို အရင်ဖျက်ပါ။"
             )
 
+        # Token ပါမပါ စစ်ဆေးခြင်း
         if len(message.command) < 2:
             return await message.reply_text(
-                "<b>D͟e͟v͟e͟l͟o͟p͟e͟r͟ : @iwillgoforwardsalone</b>\n\n/clone [Bot Token]\n\nGᴇᴛ ʙᴏᴛ ᴛᴏᴋᴇɴ ꜰʀᴏᴍ @BotFather"
+                "<b>Usage:</b>\n/clone [Bot Token]\n\n@BotFather ထံမှ Token ယူခဲ့ပါ။"
             )
         
         bot_token = message.text.split(None, 1)[1]
         
+        # Token format စစ်ဆေးခြင်း
         if not re.match(r'^\d+:[a-zA-Z0-9_-]+$', bot_token):
-            return await message.reply_text("❌ 𝗜𝗻𝘃𝗮𝗹𝗶𝗱 𝗕𝗼𝘁 𝗧𝗼𝗸𝗲𝗻.")
+            return await message.reply_text("❌ Invalid Bot Token format.")
 
-        msg = await message.reply_text("𝘾𝙧𝙚𝙖𝙩𝙞𝙣𝙜 𝙢𝙪𝙨𝙞𝙘 𝙗𝙤𝙩.𝙋𝙡𝙚𝙖𝙨𝙚 𝙬𝙖𝙞𝙩...")
+        # ရှိပြီးသား token ဖြစ်နေလား စစ်ခြင်း (Double cloning ကာကွယ်ရန်)
+        if any(c.get("bot_token") == bot_token for c in all_clones):
+            return await message.reply_text("❌ ဤ Bot သည် စနစ်ထဲတွင် ရှိနှင့်နေပြီးသား ဖြစ်သည်။")
+
+        msg = await message.reply_text("⏳ 𝘾𝙧𝙚𝙖𝙩𝙞𝙣𝙜 𝙮𝙤𝙪𝙧 𝙗𝙤𝙩. 𝙋𝙡𝙚𝙖𝙨𝙚 𝙬𝙖𝙞𝙩...")
 
         try:
             ai = Client(
-                name=bot_token,
+                name=f"clone_{bot_token.split(':')[0]}",
                 api_id=API_ID,
                 api_hash=API_HASH,
                 bot_token=bot_token,
@@ -109,24 +104,22 @@ async def clone_txt(client, message: Message):
             await ai.start()
             bot_info = await ai.get_me()
             username = bot_info.username
-            bot_mention = f"[{bot_info.first_name}](tg://user?id={bot_info.id})"
             
             await save_clone(bot_token, user_id, username)
             CLONES.add(bot_token)
             
-            details = f"""
-•✅𝗖𝗹𝗼𝗻𝗲 𝗕𝗼𝘁 𝘀𝘂𝗰𝗰𝗲𝘀𝘀𝗳𝘂𝗹𝗹𝘆 𝗰𝗿𝗲𝗮𝘁𝗲𝗱.
-
-• 𝘽𝙤𝙩 𝙉𝙖𝙢𝙚 : {bot_mention}
-• 𝙐𝙨𝙚𝙣𝙖𝙢𝙚 : @{username}
-• 𝙇𝙞𝙨𝙩𝙚𝙣 𝙩𝙤 𝙢𝙪𝙨𝙞𝙘,𝙖𝙙𝙙 𝙮𝙤𝙪𝙧 𝙘𝙡𝙤𝙣𝙚 𝙗𝙤𝙩 𝙩𝙤 𝙩𝙝𝙚 𝙜𝙧𝙤𝙪𝙥 𝙖𝙣𝙙 𝙜𝙞𝙫𝙚 𝙞𝙩 𝙖𝙙𝙢𝙞𝙣 𝙨𝙩𝙖𝙩𝙪𝙨.
-"""
-            await msg.edit_text(details)
+            await msg.edit_text(
+                f"✅ **Clone Bot Successfully Created!**\n\n"
+                f"🤖 **Bot:** @{username}\n"
+                f"👤 **Owner:** {message.from_user.mention}\n"
+                f"🔢 **Slots:** {len(user_clones) + 1}/3\n\n"
+                f"Bot ကို Group ထဲထည့်ပြီး Admin ပေးလိုက်ပါက သီချင်းဖွင့်နိုင်ပါပြီ။"
+            )
             
         except AccessTokenInvalid:
-            await msg.edit_text("❌ ɪɴᴠᴀʟɪᴅ ʙᴏᴛ ᴛᴏᴋᴇɴ.")
+            await msg.edit_text("❌ Token မှားယွင်းနေပါသည်။")
         except Exception as e:
-            await msg.edit_text(f"❌ ᴀɴ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ: {e}")
+            await msg.edit_text(f"❌ Error: {e}")
         
     except Exception as e:
         await message.reply_text(f"❌ Unexpected error: {e}")
