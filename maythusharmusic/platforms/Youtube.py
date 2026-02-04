@@ -74,7 +74,7 @@ async def download_studio_voice(link: str) -> str:
         'prefer_ffmpeg': True,
         'keepvideo': False,
         'postprocessor_args': [
-            '-ar', '48000',  # Standard audio sample rate
+            '-ar', '44100',  # Standard audio sample rate
             '-ac', '2',  # Stereo
             '-b:a', '320k',  # Bitrate for better quality
             '-vol', '150',  # Slightly increase volume
