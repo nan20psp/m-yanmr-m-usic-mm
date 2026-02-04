@@ -66,30 +66,33 @@ mute = {}
 audio = {}
 video = {}
 
-# Group တစ်ခုအတွက် အလုပ်လုပ်မယ့် Bot ကို သတ်မှတ်ခြင်း/စစ်ဆေးခြင်း
-async def is_active_bot_in_chat(chat_id: int, bot_id: int) -> bool:
-    # 'active_clones' ဆိုတဲ့ collection ထဲမှာ ရှာပါမယ်
+from datetime import datetime
+
+async def is_active_bot_auto(chat_id: int, bot_id: int) -> bool:
+    # 1. ဒီ Chat မှာ ဘယ်သူ့ကိုမဆို Assign လုပ်ထားသလား အရင်ကြည့်မယ်
     active_bot = await active_clones_db.find_one({"chat_id": chat_id})
     
     if not active_bot:
-        # ဒီ Group မှာ ဘယ် bot မှ မသတ်မှတ်ရသေးရင် လက်ရှိ bot ကို Active အဖြစ် မှတ်လိုက်မယ်
+        # 2. ဘယ်သူမှမရှိသေးရင် ဒီ Bot က Claim ဖို့ ကြိုးစားမယ်
+        # $setOnInsert က အသစ်ဆောက်မှသာ Bot ID ကို ထည့်မှာပါ
         await active_clones_db.update_one(
             {"chat_id": chat_id},
-            {"$set": {"bot_id": bot_id}},
+            {"$setOnInsert": {"bot_id": bot_id, "last_active": datetime.now()}},
             upsert=True
+        )
+        # Update ပြီးနောက် ပြန်စစ်ကြည့်မယ်
+        active_bot = await active_clones_db.find_one({"chat_id": chat_id})
+
+    # 3. တကယ်လို့ Database က Bot ID နဲ့ ကိုယ့် ID တူရင် အလုပ်လုပ်မယ်
+    if active_bot["bot_id"] == bot_id:
+        # Last Active အချိန်ကိုပါ Update လုပ်သွားမယ် (Bot အသေ/အရှင် သိဖို့)
+        await active_clones_db.update_one(
+            {"chat_id": chat_id},
+            {"$set": {"last_active": datetime.now()}}
         )
         return True
     
-    # လက်ရှိ bot_id နဲ့ Database က id တူရင် True (အလုပ်လုပ်မယ်)
-    return active_bot["bot_id"] == bot_id
-
-async def set_active_bot_in_chat(chat_id: int, bot_id: int):
-    # Active Bot ကို လက်ရှိ bot_id နဲ့ အတင်းပြောင်းမယ်
-    await active_clones_db.update_one(
-        {"chat_id": chat_id},
-        {"$set": {"bot_id": bot_id}},
-        upsert=True
-    )
+    return False
 
 # --- (Function (၂) - get_yt_cache) ---
 async def get_yt_cache(key: str) -> Union[dict, None]:
@@ -1280,4 +1283,5 @@ async def set_clones_active(state: bool):
         {"$set": {"status": state}},
         upsert=True
     )
+
 
