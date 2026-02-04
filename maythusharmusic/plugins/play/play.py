@@ -1,5 +1,6 @@
 import random
 import string
+import asyncio
 
 from pyrogram import filters
 from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message
@@ -23,6 +24,9 @@ from maythusharmusic.utils.inline import (
 from maythusharmusic.utils.logger import play_logs
 from maythusharmusic.utils.stream.stream import stream
 from config import BANNED_USERS, lyrical
+
+# --- (၁) Database မှ Auto-Claim Function ကို Import လုပ်ပါ ---
+from maythusharmusic.utils.database import is_active_bot_auto
 
 
 @app.on_message(
@@ -54,6 +58,10 @@ async def play_commnd(
     url,
     fplay,
 ):
+    # --- (၂) AUTO-CLAIM CHECK: Bot အများကြီးရှိရင် တစ်ကောင်ပဲ reply ပြန်ရန် ---
+    if not await is_active_bot_auto(message.chat.id, client.me.id):
+        return
+
     mystic = await message.reply_text(
         _["play_2"].format(channel) if channel else _["play_1"]
     )
@@ -355,13 +363,11 @@ async def play_commnd(
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
         
-        # --- START: MODIFICATION ---
         try:
             title = details.get("title", "သီချင်း") 
             await mystic.edit_text(f"📥 Download ဆွဲနေပါသည်: {title}")
-        except Exception as e:
+        except:
             pass 
-        # --- END: MODIFICATION ---
             
         try:
             await stream(
@@ -445,6 +451,10 @@ async def play_commnd(
 @app.on_callback_query(filters.regex("MusicStream") & ~BANNED_USERS)
 @languageCB
 async def play_music(client, CallbackQuery, _):
+    # --- (၃) Callback မှာလည်း အလိုအလျောက် Claim Check လုပ်ရန် ---
+    if not await is_active_bot_auto(CallbackQuery.message.chat.id, client.me.id):
+        return await CallbackQuery.answer("❌ အခြား Bot က ဤ Group တွင် အလုပ်လုပ်နေပါသည်။", show_alert=True)
+
     callback_data = CallbackQuery.data.strip()
     callback_request = callback_data.split(None, 1)[1]
     vidid, user_id, mode, cplay, fplay = callback_request.split("|")
@@ -471,13 +481,11 @@ async def play_music(client, CallbackQuery, _):
     except:
         return await mystic.edit_text(_["play_3"])
 
-    # --- START: MODIFICATION ---
     try:
         title = details.get("title", "သီချင်း")
         await mystic.edit_text(f"📥 Download ဆွဲနေပါသည်: {title}")
-    except Exception as e:
+    except:
         pass
-    # --- END: MODIFICATION ---
 
     if details["duration_min"]:
         duration_sec = time_to_seconds(details["duration_min"])
@@ -679,4 +687,4 @@ async def slider_queries(client, CallbackQuery, _):
         )
         return await CallbackQuery.edit_message_media(
             media=med, reply_markup=InlineKeyboardMarkup(buttons)
-)
+        )
