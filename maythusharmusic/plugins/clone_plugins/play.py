@@ -15,6 +15,7 @@ from maythusharmusic.utils.database import is_clones_active, is_active_bot_auto
 from maythusharmusic.utils.channelplay import get_channeplayCB
 from maythusharmusic.utils.decorators.language import languageCB
 from maythusharmusic.utils.decorators.play import PlayWrapper
+from maythusharmusic.utils.activebotauto import ActiveBotAuto
 from maythusharmusic.utils.formatters import formats
 from maythusharmusic.utils.inline import (
     botplaylist_markup,
@@ -45,6 +46,7 @@ from config import BANNED_USERS, lyrical
     & ~BANNED_USERS
 )
 @PlayWrapper
+@ActiveBotAuto
 async def play_commnd(
     client,
     message: Message,
