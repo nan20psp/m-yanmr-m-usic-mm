@@ -46,7 +46,7 @@ async def start_pm(client, message: Message, _):
     except UserNotParticipant:
         return await message.reply_photo(
             photo=config.JOIN_IMG_URL,
-            caption="ʏᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴊᴏɪɴ ᴛʜᴇ [๏ sᴜᴘᴘᴏʀᴛ ๏](https://t.me/sasukemusiciwillsgoforwardsaloneᴏ ᴜꜱᴇ ᴛʜᴇ ʙᴏᴛ !\nᴀғᴛᴇʀ ᴊᴏɪɴ ᴛʜᴇ [๏ ᴄʜᴀɴɴᴇʟ ๏](https://t.me/everythingreset) ᴄᴏᴍᴇ ʙᴀᴄᴋ ᴛᴏ ᴛʜᴇ ʙᴏᴛ ᴀɴᴅ ᴛʏᴘᴇ /start ᴀɢᴀɪɴ !",
+            caption="ʏᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴊᴏɪɴ ᴛʜᴇ [๏ sᴜᴘᴘᴏʀᴛ ๏](https://t.me/iwillsgoforwardsalone) ᴜꜱᴇ ᴛʜᴇ ʙᴏᴛ !\nᴀғᴛᴇʀ ᴊᴏɪɴ ᴛʜᴇ [๏ ᴄʜᴀɴɴᴇʟ ๏](https://t.me/everythingreset) ᴄᴏᴍᴇ ʙᴀᴄᴋ ᴛᴏ ᴛʜᴇ ʙᴏᴛ ᴀɴᴅ ᴛʏᴘᴇ /start ᴀɢᴀɪɴ !",
             reply_markup=InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton(" ᴊᴏɪɴ ", url=config.SUPPORT_CHAT),
