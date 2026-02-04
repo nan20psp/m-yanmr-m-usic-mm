@@ -103,8 +103,8 @@ async def play_commnd(
             print(f"Main Bot Check Error: {e}")
     # -----------------------------------------------------------
 
-    if not await is_active_bot_auto(message.chat.id, client.me.id):
-        return
+    #if not await is_active_bot_auto(message.chat.id, client.me.id):
+        #return
         
     mystic = await message.reply_text(
         _["play_2"].format(channel) if channel else _["play_1"]
