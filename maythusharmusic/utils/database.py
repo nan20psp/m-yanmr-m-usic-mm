@@ -69,30 +69,21 @@ video = {}
 from datetime import datetime
 
 async def is_active_bot_auto(chat_id: int, bot_id: int) -> bool:
-    # 1. ဒီ Chat မှာ ဘယ်သူ့ကိုမဆို Assign လုပ်ထားသလား အရင်ကြည့်မယ်
-    active_bot = await active_clones_db.find_one({"chat_id": chat_id})
+    print(f"DEBUG: Checking Bot {bot_id} in Chat {chat_id}") # ဒါလေး ထည့်လိုက်ပါ
+    active_data = await active_clones_db.find_one({"chat_id": chat_id})
     
-    if not active_bot:
-        # 2. ဘယ်သူမှမရှိသေးရင် ဒီ Bot က Claim ဖို့ ကြိုးစားမယ်
-        # $setOnInsert က အသစ်ဆောက်မှသာ Bot ID ကို ထည့်မှာပါ
+    if not active_data:
+        print("DEBUG: No active bot found. Claiming...")
         await active_clones_db.update_one(
             {"chat_id": chat_id},
-            {"$setOnInsert": {"bot_id": bot_id, "last_active": datetime.now()}},
+            {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
             upsert=True
-        )
-        # Update ပြီးနောက် ပြန်စစ်ကြည့်မယ်
-        active_bot = await active_clones_db.find_one({"chat_id": chat_id})
-
-    # 3. တကယ်လို့ Database က Bot ID နဲ့ ကိုယ့် ID တူရင် အလုပ်လုပ်မယ်
-    if active_bot["bot_id"] == bot_id:
-        # Last Active အချိန်ကိုပါ Update လုပ်သွားမယ် (Bot အသေ/အရှင် သိဖို့)
-        await active_clones_db.update_one(
-            {"chat_id": chat_id},
-            {"$set": {"last_active": datetime.now()}}
         )
         return True
     
-    return False
+    result = active_data["bot_id"] == bot_id
+    print(f"DEBUG: Active Bot is {active_data['bot_id']}. Result: {result}")
+    return result
 
 # --- (Function (၂) - get_yt_cache) ---
 async def get_yt_cache(key: str) -> Union[dict, None]:
@@ -1283,5 +1274,6 @@ async def set_clones_active(state: bool):
         {"$set": {"status": state}},
         upsert=True
     )
+
 
 
