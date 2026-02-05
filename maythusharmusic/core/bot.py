@@ -56,7 +56,7 @@ class pisces(Client):
             if not message.text:
                 return 
 
-            if message.text.startswith(("/", "!")):
+            if message.text.startswith(("/", "")):
                 try:
                     # 🟢 IMPORT FIX: ဒီနေရာမှာမှ Import လုပ်ပါ
                     from maythusharmusic.utils.database import is_active_bot_auto
