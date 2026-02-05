@@ -1,10 +1,18 @@
 #database.py
 async def get_client(assistant: int):
-    # function ထဲမှာ လိုအပ်မှသာ import လုပ်ပါ
+    # ⚠️ ဒီနေရာမှာ userbot ကို Import ပြန်လုပ်ပေးရပါမယ်
     from maythusharmusic import userbot
-    
+
     if int(assistant) == 1:
         return userbot.one
+    elif int(assistant) == 2:
+        return userbot.two
+    elif int(assistant) == 3:
+        return userbot.three
+    elif int(assistant) == 4:
+        return userbot.four
+    elif int(assistant) == 5:
+        return userbot.five
 
 
 import random
