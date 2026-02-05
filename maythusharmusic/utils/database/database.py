@@ -8,6 +8,8 @@ from typing import Dict, List, Union, Any
 from maythusharmusic import userbot
 from config import CLEANMODE_DELETE_MINS
 from maythusharmusic.core.mongo import mongodb, pymongodb
+from pyrogram.enums import ChatMemberStatus
+from pyrogram.errors import UserNotParticipant
 
 active_clones_db = mongodb.active_clones
 authdb = mongodb.adminauth
@@ -69,16 +71,15 @@ audio = {}
 video = {}
 
 
-
-async def is_active_bot_auto(chat_id: int, bot_id: int) -> bool:
+async def is_active_bot_auto(client, chat_id: int, bot_id: int) -> bool:
     """
-    Group တစ်ခုတွင် Bot တစ်ကောင်တည်းသာ အလုပ်လုပ်စေရန် Lock ချပေးသည့် စနစ်။
+    လက်ရှိ Active Bot က Admin မဟုတ်တော့ရင် တခြား Admin Bot တစ်ကောင်က နေရာလုမည့် စနစ်။
     """
-    # ၁။ လက်ရှိ group အတွက် ဘယ် bot က lock ယူထားလဲ ရှာမယ်
+    # ၁။ Database မှာ ဘယ်သူ lock ယူထားလဲ အရင်ရှာမယ်
     active_data = await active_clones_db.find_one({"chat_id": chat_id})
     
+    # ၂။ ဘယ်သူမှ Lock မယူရသေးရင် (သို့မဟုတ်) အရင်ကောင် မရှိတော့ရင် Claim မယ်
     if not active_data:
-        # ၂။ ဘယ်သူမှ မရှိသေးရင် အခု command လက်ခံရတဲ့ bot က 'Active' အဖြစ် နေရာဦးလိုက်မယ်
         await active_clones_db.update_one(
             {"chat_id": chat_id},
             {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
@@ -86,29 +87,50 @@ async def is_active_bot_auto(chat_id: int, bot_id: int) -> bool:
         )
         return True
 
-    # ၃။ Lock ယူထားတဲ့ Bot ID နဲ့ လက်ရှိ Bot ID တူရင် အလုပ်လုပ်မယ်
-    if active_data["bot_id"] == bot_id:
-        # အလုပ်လုပ်တိုင်း နောက်ဆုံး အလုပ်လုပ်တဲ့ အချိန်ကို update လုပ်မယ်
-        await active_clones_db.update_one(
-            {"chat_id": chat_id},
-            {"$set": {"last_active": datetime.now()}}
-        )
-        return True
-    
-    # ၄။ (Fallback) Lock ယူထားတဲ့ Bot က Offline ဖြစ်နေတာ ၂၄ နာရီကျော်ရင် 
-    # တခြား Bot တစ်ကောင်က နေရာလုခွင့်ပေးမယ်
-    last_active = active_data.get("last_active")
-    if last_active:
-        diff = datetime.now() - last_active
-        if diff.total_seconds() > 86400: # 24 နာရီ (စက္ကန့်ဖြင့်)
+    current_active_id = active_data["bot_id"]
+
+    # ၃။ တကယ်လို့ ငါက လက်ရှိ Active Bot ဖြစ်နေရင်...
+    if current_active_id == bot_id:
+        try:
+            # ငါ admin ဖြစ်နေသေးလား စစ်မယ်
+            member = await client.get_chat_member(chat_id, bot_id)
+            if member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                return True
+            else:
+                # ငါ့ကို admin ဖြုတ်လိုက်ပြီဆိုရင် Lock ကို ဖြုတ်ချလိုက်မယ်
+                await active_clones_db.delete_one({"chat_id": chat_id})
+                return False
+        except:
+            await active_clones_db.delete_one({"chat_id": chat_id})
+            return False
+
+    # ၄။ ငါက Active မဟုတ်သေးဘူးဆိုရင်... (နေရာလုဖို့ အခွင့်အရေး စစ်မယ်)
+    else:
+        try:
+            # လက်ရှိ Lock ယူထားတဲ့ Bot က Group ထဲမှာ Admin ဖြစ်နေသေးလား စစ်မယ်
+            active_member = await client.get_chat_member(chat_id, current_active_id)
+            
+            if active_member.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                # ဟိုကောင် Admin မဟုတ်တော့ဘူး! ငါက Admin ဖြစ်နေရင် နေရာလုလိုက်မယ်
+                my_status = await client.get_chat_member(chat_id, bot_id)
+                if my_status.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                    await active_clones_db.update_one(
+                        {"chat_id": chat_id},
+                        {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
+                        upsert=True
+                    )
+                    return True
+        except (UserNotParticipant, Exception):
+            # ဟိုကောင် Group ထဲမှာ မရှိတော့တာ (သို့မဟုတ်) Error တက်ရင် နေရာလုမယ်
             await active_clones_db.update_one(
                 {"chat_id": chat_id},
-                {"$set": {"bot_id": bot_id, "last_active": datetime.now()}}
+                {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
+                upsert=True
             )
             return True
 
     return False
-
+    
 # --- (Function (၂) - get_yt_cache) ---
 async def get_yt_cache(key: str) -> Union[dict, None]:
     try:
