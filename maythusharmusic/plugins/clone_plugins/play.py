@@ -67,42 +67,6 @@ async def play_commnd(
                 "> •ခေတ္တစောင့်ဆိုင်းပြီးမှ ပြန်လည်ကြိုးစားပါ။"
             )
     
-    # --- (၁) MAIN BOT ADMIN CHECK (DIRECT LOGIC) ---
-    # Clone Bot ဖြစ်မှသာ စစ်ဆေးမည်
-    if client.me.id != app.me.id:
-        try:
-            # Main Bot အချက်အလက်ရယူခြင်း
-            if not app.me:
-                await app.get_me()
-            
-            main_bot_id = app.me.id
-            main_bot_username = app.me.username
-
-            try:
-                # Clone Bot (client) ကနေ Main Bot ကို Group ထဲမှာ လိုက်ရှာခြင်း
-                member = await client.get_chat_member(chat_id, main_bot_id)
-                
-                # Admin သို့မဟုတ် Owner မဟုတ်ရင် တားမည်
-                if member.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-                    return await message.reply_text(
-                        f">•**ᴍᴀɪɴ ᴍᴜꜱɪᴄ ʙᴏᴛ ᴀᴅᴍɪɴ ʀᴇǫᴜɪʀᴇᴅ.**\n"
-                        f"•ᴛᴏ ᴜꜱᴇ ᴛʜᴇ ᴄʟᴏɴᴇ ʙᴏᴛ, ᴛʜᴇ ᴏʀɪɢɪɴᴀʟ ʙᴏᴛ, @{main_bot_username} , must be appointed as <b>ᴀᴅᴍɪɴ</b> ɪɴ ᴛʜɪꜱ ɢʀᴏᴜᴘ.",
-                        reply_markup=InlineKeyboardMarkup([
-                            [InlineKeyboardButton(" Aᴅᴅ ᴍᴀɪɴ ʙᴏᴛ & ᴘʀᴏᴍᴏᴛᴇ ", url=f"https://t.me/{main_bot_username}?startgroup=s&admin=delete_messages+manage_video_chats+pin_messages+invite_users+ban_users")]
-                        ])
-                    )
-                    
-            except UserNotParticipant:
-                # Main Bot Group ထဲမှာ လုံးဝမရှိရင် တားမည်
-                return await message.reply_text(
-                    f">•**ᴍᴀɪɴ ʙᴏᴛ ᴍɪꜱꜱɪɴɢ**\n"
-                    f"•ᴛᴏ ᴜꜱᴇ ᴛʜᴇ ᴄʟᴏɴᴇ ʙᴏᴛ, ᴀᴅᴅ ᴛʜᴇ ᴏʀɪɢɪɴᴀʟ ʙᴏᴛ, @{main_bot_username} to this Group and give it <b>ᴀᴅᴍɪɴ</b> status.",
-                    reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton(" Aᴅᴅ ᴍᴀɪɴ ʙᴏᴛ ", url=f"https://t.me/{main_bot_username}?startgroup=s&admin=delete_messages+manage_video_chats+pin_messages+invite_users+ban_users")]
-                    ])
-                )
-        except Exception as e:
-            print(f"Main Bot Check Error: {e}")
     # -----------------------------------------------------------
 
     mystic = await message.reply_text(
