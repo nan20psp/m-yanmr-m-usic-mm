@@ -1,4 +1,4 @@
-from pyrogram.enums import ChatType
+from pyrogram.enums import ChatType, ChatMemberStatus
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from maythusharmusic import app
@@ -13,7 +13,7 @@ from maythusharmusic.utils.database import (
     is_nonadmin_chat,
     is_skipmode,
 )
-from config import SUPPORT_CHAT, adminlist, confirmer
+from config import SUPPORT_CHAT, confirmer
 from strings import get_string
 
 from ..formatters import int_to_alpha
@@ -37,7 +37,8 @@ def AdminRightsCheck(mystic):
             language = await get_lang(message.chat.id)
             _ = get_string(language)
         except:
-            _ = get_string("en")
+            _ = get_string("my")
+            
         if message.sender_chat:
             upl = InlineKeyboardMarkup(
                 [
@@ -50,6 +51,7 @@ def AdminRightsCheck(mystic):
                 ]
             )
             return await message.reply_text(_["general_3"], reply_markup=upl)
+            
         if message.command[0][0] == "c":
             chat_id = await get_cmode(message.chat.id)
             if chat_id is None:
@@ -60,16 +62,24 @@ def AdminRightsCheck(mystic):
                 return await message.reply_text(_["cplay_4"])
         else:
             chat_id = message.chat.id
+            
         if not await is_active_chat(chat_id):
             return await message.reply_text(_["general_5"])
+            
         is_non_admin = await is_nonadmin_chat(message.chat.id)
         if not is_non_admin:
             if message.from_user.id not in SUDOERS:
-                admins = adminlist.get(message.chat.id)
-                if not admins:
-                    return await message.reply_text(_["admin_13"])
-                else:
-                    if message.from_user.id not in admins:
+                # 🟢 FIX: adminlist cache အစား Direct Check ကိုသုံးပါ (Clone Bot များအတွက်)
+                try:
+                    member = await client.get_chat_member(message.chat.id, message.from_user.id)
+                    is_admin = member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR]
+                except:
+                    is_admin = False
+
+                # Admin မဟုတ်ရင် Auth Users စစ်မယ်၊ ပြီးမှ Voting ဆီသွားမယ်
+                if not is_admin:
+                    check = await get_authuser_names(message.chat.id)
+                    if message.from_user.id not in check:
                         if await is_skipmode(message.chat.id):
                             upvote = await get_upvote_count(chat_id)
                             text = f"""<b>ᴀᴅᴍɪɴ ʀɪɢʜᴛs ɴᴇᴇᴅᴇᴅ</b>
@@ -134,6 +144,7 @@ def AdminActual(mystic):
             _ = get_string(language)
         except:
             _ = get_string("en")
+            
         if message.sender_chat:
             upl = InlineKeyboardMarkup(
                 [
@@ -146,10 +157,12 @@ def AdminActual(mystic):
                 ]
             )
             return await message.reply_text(_["general_3"], reply_markup=upl)
+            
         if message.from_user.id not in SUDOERS:
             try:
+                # 🟢 FIX: app.get_chat_member အစား client.get_chat_member ကို ပြောင်းထားပါသည်
                 member = (
-                    await app.get_chat_member(message.chat.id, message.from_user.id)
+                    await client.get_chat_member(message.chat.id, message.from_user.id)
                 ).privileges
             except:
                 return
@@ -178,8 +191,9 @@ def ActualAdminCB(mystic):
         is_non_admin = await is_nonadmin_chat(CallbackQuery.message.chat.id)
         if not is_non_admin:
             try:
+                # 🟢 FIX: app.get_chat_member အစား client.get_chat_member ကို ပြောင်းထားပါသည်
                 a = (
-                    await app.get_chat_member(
+                    await client.get_chat_member(
                         CallbackQuery.message.chat.id,
                         CallbackQuery.from_user.id,
                     )
