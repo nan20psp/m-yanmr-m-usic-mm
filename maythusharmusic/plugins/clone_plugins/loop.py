@@ -4,14 +4,14 @@ from pyrogram.types import Message
 from maythusharmusic import app
 from maythusharmusic.utils.database import get_loop, set_loop
 from maythusharmusic.utils.decorators import AdminRightsCheck
-from maythusharmusic.utils.activebotauto import ActiveBotAuto
+#from maythusharmusic.utils.activebotauto import ActiveBotAuto
 from maythusharmusic.utils.inline import close_markup
 from config import BANNED_USERS
 
 
 @Client.on_message(filters.command(["loop", "cloop"]) & filters.group & ~BANNED_USERS)
 @AdminRightsCheck
-@ActiveBotAuto
+#@ActiveBotAuto
 async def admins(cli, message: Message, _, chat_id):
     usage = _["admin_17"]
     if len(message.command) != 2:
