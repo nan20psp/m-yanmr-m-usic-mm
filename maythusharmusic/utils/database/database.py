@@ -1,27 +1,11 @@
 #database.py
-async def get_client(assistant: int):
-    # ⚠️ ဒီနေရာမှာ userbot ကို Import ပြန်လုပ်ပေးရပါမယ်
-    from maythusharmusic import userbot
-
-    if int(assistant) == 1:
-        return userbot.one
-    elif int(assistant) == 2:
-        return userbot.two
-    elif int(assistant) == 3:
-        return userbot.three
-    elif int(assistant) == 4:
-        return userbot.four
-    elif int(assistant) == 5:
-        return userbot.five
-
-
 import random
 from datetime import datetime
 import string
 import time
 from typing import Dict, List, Union, Any
 
-#from maythusharmusic import userbot
+from maythusharmusic import userbot
 from config import CLEANMODE_DELETE_MINS
 from maythusharmusic.core.mongo import mongodb, pymongodb
 from pyrogram.enums import ChatMemberStatus
