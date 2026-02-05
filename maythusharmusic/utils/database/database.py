@@ -9,7 +9,7 @@ from maythusharmusic import userbot
 from config import CLEANMODE_DELETE_MINS
 from maythusharmusic.core.mongo import mongodb, pymongodb
 from pyrogram.enums import ChatMemberStatus
-from pyrogram.errors import UserNotParticipant
+from pyrogram.errors import UserNotParticipant, RPCError
 
 active_clones_db = mongodb.active_clones
 authdb = mongodb.adminauth
@@ -73,40 +73,42 @@ video = {}
 
 async def is_active_bot_auto(client, chat_id: int, bot_id: int) -> bool:
     try:
-        # ၁။ Chat တစ်ခုအတွက် Lock ရှိမရှိ စစ်မယ်၊ မရှိရင် အခု Bot ID နဲ့ အသစ်ဆောက်မယ် (Atomic Operation)
-        # ဒီ $setOnInsert က entry မရှိမှသာ အလုပ်လုပ်မှာဖြစ်လို့ Bot အများကြီးပြိုင်လုတာကို ကာကွယ်ပေးတယ်
+        # ၁။ Chat တစ်ခုအတွက် Lock ရှိမရှိ စစ်မည်။ မရှိရင် အခု Bot ID နဲ့ အသစ်ဆောက်မည် (Atomic Operation)
+        # $setOnInsert က entry မရှိမှသာ အလုပ်လုပ်မှာဖြစ်လို့ Bot အများကြီးပြိုင်လုတာကို ကာကွယ်ပေးပါသည်
         await active_clones_db.update_one(
             {"chat_id": chat_id},
             {"$setOnInsert": {"bot_id": bot_id, "last_active": datetime.now()}},
             upsert=True
         )
 
-        # ၂။ Database ထဲက အမှန်တကယ် Lock ရထားတဲ့ Bot ID ကို ပြန်ယူမယ်
+        # ၂။ Database ထဲက အမှန်တကယ် Lock ရထားတဲ့ Bot ID ကို ပြန်ယူပြီး တိုက်စစ်မည်
         active_data = await active_clones_db.find_one({"chat_id": chat_id})
+        
+        if not active_data:
+            return False
+            
         current_active_id = active_data["bot_id"]
 
-        # ၃။ ငါက Lock ရထားတဲ့ကောင် ဖြစ်နေရင်...
+        # ၃။ ငါက Lock ရထားတဲ့ကောင် ဖြစ်နေရင် Admin status ကို စစ်မည်
         if current_active_id == bot_id:
             try:
-                # ငါ Admin ဖြစ်နေသေးသရွေ့ ငါကပဲ အလုပ်လုပ်မယ်
                 member = await client.get_chat_member(chat_id, bot_id)
                 if member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
                     return True
                 else:
-                    # ငါ Admin မဟုတ်တော့ရင် Lock ကို ဖျက်ချလိုက်မယ် (နောက် Bot တစ်ကောင် နေရာယူနိုင်အောင်)
+                    # ငါ Admin မဟုတ်တော့ရင် Lock ကို ဖျက်ချလိုက်မည် (နောက် Bot တစ်ကောင် နေရာယူနိုင်ရန်)
                     await active_clones_db.delete_one({"chat_id": chat_id})
                     return False
             except Exception:
                 await active_clones_db.delete_one({"chat_id": chat_id})
                 return False
 
-        # ၄။ ငါက Lock မရထားတဲ့ကောင် ဆိုရင်... (Failover Logic)
+        # ၄။ ငါက Lock မရထားတဲ့ကောင်ဆိုရင် လက်ရှိကောင် Admin ဟုတ်သေးလား စစ်ဆေးပြီး Failover လုပ်မည်
         else:
             try:
-                # လက်ရှိ Lock ယူထားတဲ့ကောင်က Admin ဟုတ်သေးလား စစ်မယ်
                 active_member = await client.get_chat_member(chat_id, current_active_id)
                 if active_member.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-                    # ဟိုကောင် Admin မဟုတ်တော့ဘူး! ငါက Admin ဖြစ်ရင် Lock ကို လွှဲယူလိုက်မယ်
+                    # Lock ယူထားတဲ့ကောင် Admin မဟုတ်တော့ရင် ငါက နေရာလွှဲယူမည်
                     my_status = await client.get_chat_member(chat_id, bot_id)
                     if my_status.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
                         await active_clones_db.update_one(
@@ -115,7 +117,7 @@ async def is_active_bot_auto(client, chat_id: int, bot_id: int) -> bool:
                         )
                         return True
             except (UserNotParticipant, RPCError):
-                # ဟိုကောင် Group ထဲမှာ မရှိတော့ရင် နေရာလုမယ်
+                # လက်ရှိကောင် Group ထဲမှာ မရှိတော့ရင် နေရာလုမည်
                 await active_clones_db.update_one(
                     {"chat_id": chat_id},
                     {"$set": {"bot_id": bot_id, "last_active": datetime.now()}}
