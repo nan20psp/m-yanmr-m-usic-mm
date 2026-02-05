@@ -33,14 +33,14 @@ class pisces(Client):
             if not message.text:
                 return
 
-            # Commands တွေကို လမ်းဖြတ်စစ်မယ်
-            if message.text.startswith(("/", "")):
+            # Commands များကို လမ်းဖြတ်စစ်ဆေးမည်
+            if message.text.startswith(("/", "!")):
                 try:
                     from maythusharmusic.utils.database import is_active_bot_auto
                     
-                    # client, chat_id, bot_id (၃) ခုလုံးကို မှန်အောင် ပို့ပေးပါ
+                    # client, chat_id, bot_id (၃) ခုလုံးကို ပို့ပေးပါ
                     if not await is_active_bot_auto(client, message.chat.id, client.me.id):
-                        # ငါက Active မဟုတ်ရင် ဒီ Message ကို Plugin တွေဆီ ဆက်မလွှတ်တော့ဘူး
+                        # ငါက Active မဟုတ်ရင် ဒီ Message ကို Plugin တွေဆီ ဆက်မလွှတ်တော့ပါ
                         message.stop_propagation()
                 except Exception as e:
                     LOGGER(__name__).error(f"Conflict Handler Error: {e}")
