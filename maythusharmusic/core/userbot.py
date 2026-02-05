@@ -1,4 +1,5 @@
 from pyrogram import Client
+from maythusharmusic.utils.database import get_clones, save_clone
 import re
 import asyncio
 from os import getenv
@@ -20,6 +21,42 @@ STRING_SESSION = getenv("STRING_SESSION", "")
 assistants = []
 assistantids = []
 
+async def start_clones():
+    """
+    Database ထဲရှိ Clone Bot အားလုံးကို တစ်ခုချင်းစီ စတင်ပေးပြီး ID များကို သိမ်းဆည်းသည်
+    """
+    clones = await get_clones() # Database မှ Clone စာရင်းကိုယူသည်
+    
+    for clone in clones:
+        bot_token = clone["bot_token"]
+        
+        try:
+            # ၁။ Clone Bot Client ကို တည်ဆောက်ခြင်း
+            # config ထဲက API_ID, API_HASH တို့ကို သုံးထားသည်ဟု ယူဆပါသည်
+            client = Client(
+                name=f"clone_{bot_token[:10]}",
+                api_id=config.API_ID,
+                api_hash=config.API_HASH,
+                bot_token=bot_token,
+                no_updates=False, # Auto-Leave အလုပ်လုပ်ရန် Update များကို လက်ခံရပါမည်
+            )
+            
+            # ၂။ Bot ကို Start လုပ်ခြင်း
+            await client.start()
+            
+            # ၃။ Bot ၏ အချက်အလက်များကို ယူခြင်း
+            details = await client.get_me()
+            bot_id = details.id
+            bot_username = details.username
+            
+            # ၄။ --- Database တွင် ID နှင့် Username ကို Update လုပ်ခြင်း ---
+            # ဒါမှသာ auto_leave logic က ID ကိုသုံးပြီး ခွဲခြားနိုင်မှာပါ
+            await save_clone(bot_token, bot_id, bot_username)
+            
+            LOGGER(__name__).info(f"✅ Clone Started & ID Saved: @{bot_username} ({bot_id})")
+            
+        except Exception as e:
+            LOGGER(__name__).error(f"❌ Failed to start clone bot with token {bot_token[:10]}... : {e}")
 
 class Userbot(Client):
     def __init__(self):
