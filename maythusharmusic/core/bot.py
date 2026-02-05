@@ -27,15 +27,15 @@ class pisces(Client):
         # --- (၁) BOT CONFLICT HANDLER (အလိုအလျောက် ပေါင်းစပ်ခြင်း) ---
         # Group ထဲမှာ Command တစ်ခုတက်လာတိုင်း တခြား Plugin တွေဆီ မရောက်ခင် 
         # ဒီကောင်က အရင်စစ်ပါမယ် (group=-1 ကြောင့် အရင်ဆုံး အလုပ်လုပ်တာပါ)
-        @self.on_message(filters.group & ~filters.service, group=-1)
+        
         @self.on_message(filters.group & ~filters.service, group=-1)
         async def bot_conflict_handler(client, message):
-            # message.text ရှိမရှိနဲ့ / သို့မဟုတ် ! နဲ့ စ-မစ စစ်တာပါ
             if message.text and message.text.startswith(("/", "")):
                 try:
                     from maythusharmusic.utils.database import is_active_bot_auto
                     
-                    if not await is_active_bot_auto(message.chat.id, client.id):
+                    # client ကိုပါ argument အဖြစ် ထည့်ပေးလိုက်ပါ
+                    if not await is_active_bot_auto(client, message.chat.id, client.id):
                         message.stop_propagation()
                 except Exception as e:
                     LOGGER(__name__).error(f"Conflict Handler Error: {e}")
