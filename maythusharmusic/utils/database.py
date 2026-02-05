@@ -1,5 +1,6 @@
 #database.py
 import random
+from datetime import datetime
 import string
 import time
 from typing import Dict, List, Union, Any
@@ -7,7 +8,10 @@ from typing import Dict, List, Union, Any
 from maythusharmusic import userbot
 from config import CLEANMODE_DELETE_MINS
 from maythusharmusic.core.mongo import mongodb, pymongodb
+from pyrogram.enums import ChatMemberStatus
+from pyrogram.errors import UserNotParticipant, RPCError
 
+active_clones_db = mongodb.active_clones
 authdb = mongodb.adminauth
 authuserdb = mongodb.authuser
 autoenddb = mongodb.autoend
@@ -66,25 +70,66 @@ mute = {}
 audio = {}
 video = {}
 
-from datetime import datetime
 
-async def is_active_bot_auto(chat_id: int, bot_id: int) -> bool:
-    print(f"DEBUG: Checking Bot {bot_id} in Chat {chat_id}") # ဒါလေး ထည့်လိုက်ပါ
-    active_data = await active_clones_db.find_one({"chat_id": chat_id})
-    
-    if not active_data:
-        print("DEBUG: No active bot found. Claiming...")
-        await active_clones_db.update_one(
-            {"chat_id": chat_id},
-            {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
-            upsert=True
-        )
-        return True
-    
-    result = active_data["bot_id"] == bot_id
-    print(f"DEBUG: Active Bot is {active_data['bot_id']}. Result: {result}")
-    return result
+async def is_active_bot_auto(client, chat_id: int, bot_id: int) -> bool:
+    try:
+        # --- (Race Condition ကို ကာကွယ်ရန် စက္ကန့်ဝက်ခန့် Random စောင့်ခိုင်းခြင်း) ---
+        # Bot တစ်ကောင်ချင်းစီကို 0.1 ကနေ 0.8 စက္ကန့်ကြား မတူညီတဲ့ အချိန်စောင့်ခိုင်းပါမယ်
+        await asyncio.sleep(random.uniform(0.1, 0.8))
 
+        # ၁။ လက်ရှိ group မှာ ဘယ်သူ Lock ယူထားလဲ အရင်ကြည့်မယ်
+        active_data = await active_clones_db.find_one({"chat_id": chat_id})
+        
+        # ၂။ ဘယ်သူမှ မရှိသေးရင် claim မယ်
+        if not active_data:
+            await active_clones_db.update_one(
+                {"chat_id": chat_id},
+                {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
+                upsert=True
+            )
+            return True
+
+        # ၃။ Lock ရထားတဲ့ ID ကို စစ်မယ်
+        current_active_id = active_data["bot_id"]
+
+        if current_active_id == bot_id:
+            # ငါက Active ဖြစ်နေရင် Admin status ကိုပါ စစ်မယ်
+            try:
+                member = await client.get_chat_member(chat_id, bot_id)
+                if member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                    return True
+                else:
+                    await active_clones_db.delete_one({"chat_id": chat_id})
+                    return False
+            except:
+                return False
+
+        # ၄။ ငါက Active မဟုတ်ရင် လက်ရှိကောင် Admin ဟုတ်-မဟုတ် စစ်ပြီး နေရာလုမယ်
+        else:
+            try:
+                # လက်ရှိကောင် Admin Status စစ်ဆေးခြင်း
+                active_member = await client.get_chat_member(chat_id, current_active_id)
+                if active_member.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                    # ဟိုကောင် Admin မဟုတ်တော့ရင် ငါက နေရာလုမယ်
+                    my_status = await client.get_chat_member(chat_id, bot_id)
+                    if my_status.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                        await active_clones_db.update_one(
+                            {"chat_id": chat_id},
+                            {"$set": {"bot_id": bot_id, "last_active": datetime.now()}}
+                        )
+                        return True
+            except:
+                # ဟိုကောင် မရှိတော့ရင် နေရာလုမယ်
+                await active_clones_db.update_one(
+                    {"chat_id": chat_id},
+                    {"$set": {"bot_id": bot_id, "last_active": datetime.now()}}
+                )
+                return True
+
+        return False
+    except:
+        return False
+    
 # --- (Function (၂) - get_yt_cache) ---
 async def get_yt_cache(key: str) -> Union[dict, None]:
     try:
@@ -614,8 +659,8 @@ async def get_lang(chat_id: int) -> str:
     if not mode:
         lang = await langdb.find_one({"chat_id": chat_id})
         if not lang:
-            langm[chat_id] = "en"
-            return "en"
+            langm[chat_id] = "my"
+            return "my"
         langm[chat_id] = lang["lang"]
         return lang["lang"]
     return mode
@@ -1274,6 +1319,3 @@ async def set_clones_active(state: bool):
         {"$set": {"status": state}},
         upsert=True
     )
-
-
-
