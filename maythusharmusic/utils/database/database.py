@@ -72,16 +72,56 @@ video = {}
 
 
 async def is_active_bot_auto(client, chat_id: int, bot_id: int) -> bool:
-    try:
-        # --- (Race Condition ကို ကာကွယ်ရန် စက္ကန့်ဝက်ခန့် Random စောင့်ခိုင်းခြင်း) ---
-        # Bot တစ်ကောင်ချင်းစီကို 0.1 ကနေ 0.8 စက္ကန့်ကြား မတူညီတဲ့ အချိန်စောင့်ခိုင်းပါမယ်
-        await asyncio.sleep(random.uniform(0.1, 0.8))
+    """
+    လက်ရှိ Active Bot က Admin မဟုတ်တော့ရင် တခြား Admin Bot တစ်ကောင်က နေရာလုမည့် စနစ်။
+    """
+    # ၁။ Database မှာ ဘယ်သူ lock ယူထားလဲ အရင်ရှာမယ်
+    active_data = await active_clones_db.find_one({"chat_id": chat_id})
+    
+    # ၂။ ဘယ်သူမှ Lock မယူရသေးရင် (သို့မဟုတ်) အရင်ကောင် မရှိတော့ရင် Claim မယ်
+    if not active_data:
+        await active_clones_db.update_one(
+            {"chat_id": chat_id},
+            {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
+            upsert=True
+        )
+        return True
 
-        # ၁။ လက်ရှိ group မှာ ဘယ်သူ Lock ယူထားလဲ အရင်ကြည့်မယ်
-        active_data = await active_clones_db.find_one({"chat_id": chat_id})
-        
-        # ၂။ ဘယ်သူမှ မရှိသေးရင် claim မယ်
-        if not active_data:
+    current_active_id = active_data["bot_id"]
+
+    # ၃။ တကယ်လို့ ငါက လက်ရှိ Active Bot ဖြစ်နေရင်...
+    if current_active_id == bot_id:
+        try:
+            # ငါ admin ဖြစ်နေသေးလား စစ်မယ်
+            member = await client.get_chat_member(chat_id, bot_id)
+            if member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                return True
+            else:
+                # ငါ့ကို admin ဖြုတ်လိုက်ပြီဆိုရင် Lock ကို ဖြုတ်ချလိုက်မယ်
+                await active_clones_db.delete_one({"chat_id": chat_id})
+                return False
+        except:
+            await active_clones_db.delete_one({"chat_id": chat_id})
+            return False
+
+    # ၄။ ငါက Active မဟုတ်သေးဘူးဆိုရင်... (နေရာလုဖို့ အခွင့်အရေး စစ်မယ်)
+    else:
+        try:
+            # လက်ရှိ Lock ယူထားတဲ့ Bot က Group ထဲမှာ Admin ဖြစ်နေသေးလား စစ်မယ်
+            active_member = await client.get_chat_member(chat_id, current_active_id)
+            
+            if active_member.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                # ဟိုကောင် Admin မဟုတ်တော့ဘူး! ငါက Admin ဖြစ်နေရင် နေရာလုလိုက်မယ်
+                my_status = await client.get_chat_member(chat_id, bot_id)
+                if my_status.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+                    await active_clones_db.update_one(
+                        {"chat_id": chat_id},
+                        {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
+                        upsert=True
+                    )
+                    return True
+        except (UserNotParticipant, Exception):
+            # ဟိုကောင် Group ထဲမှာ မရှိတော့တာ (သို့မဟုတ်) Error တက်ရင် နေရာလုမယ်
             await active_clones_db.update_one(
                 {"chat_id": chat_id},
                 {"$set": {"bot_id": bot_id, "last_active": datetime.now()}},
@@ -89,46 +129,7 @@ async def is_active_bot_auto(client, chat_id: int, bot_id: int) -> bool:
             )
             return True
 
-        # ၃။ Lock ရထားတဲ့ ID ကို စစ်မယ်
-        current_active_id = active_data["bot_id"]
-
-        if current_active_id == bot_id:
-            # ငါက Active ဖြစ်နေရင် Admin status ကိုပါ စစ်မယ်
-            try:
-                member = await client.get_chat_member(chat_id, bot_id)
-                if member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-                    return True
-                else:
-                    await active_clones_db.delete_one({"chat_id": chat_id})
-                    return False
-            except:
-                return False
-
-        # ၄။ ငါက Active မဟုတ်ရင် လက်ရှိကောင် Admin ဟုတ်-မဟုတ် စစ်ပြီး နေရာလုမယ်
-        else:
-            try:
-                # လက်ရှိကောင် Admin Status စစ်ဆေးခြင်း
-                active_member = await client.get_chat_member(chat_id, current_active_id)
-                if active_member.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-                    # ဟိုကောင် Admin မဟုတ်တော့ရင် ငါက နေရာလုမယ်
-                    my_status = await client.get_chat_member(chat_id, bot_id)
-                    if my_status.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-                        await active_clones_db.update_one(
-                            {"chat_id": chat_id},
-                            {"$set": {"bot_id": bot_id, "last_active": datetime.now()}}
-                        )
-                        return True
-            except:
-                # ဟိုကောင် မရှိတော့ရင် နေရာလုမယ်
-                await active_clones_db.update_one(
-                    {"chat_id": chat_id},
-                    {"$set": {"bot_id": bot_id, "last_active": datetime.now()}}
-                )
-                return True
-
-        return False
-    except:
-        return False
+    return False
     
 # --- (Function (၂) - get_yt_cache) ---
 async def get_yt_cache(key: str) -> Union[dict, None]:
