@@ -5,6 +5,8 @@ from pyrogram.enums import ChatMemberStatus, ParseMode
 import config
 from ..logging import LOGGER
 
+# ⚠️ Database Import ကို ဒီနားမှာ မထားပါနဲ့ (Circular Import ဖြစ်စေသည်)
+
 class pisces(Client):
     def __init__(self):
         LOGGER(__name__).info(f"Starting Bot...")
@@ -24,19 +26,19 @@ class pisces(Client):
         self.username = self.me.username
         self.mention = self.me.mention
 
-        # --- (၁) AUTO-LEAVE REDUNDANT BOTS (Main/Clone မခွဲဘဲ တစ်ကောင်ပဲ လက်ခံခြင်း) ---
-        # Group ထဲကို Member အသစ်ဝင်လာတိုင်း စစ်ဆေးမည့် Handler ဖြစ်သည်
+        # --- (၁) AUTO-LEAVE LOGIC (Group တစ်ခု Bot တစ်ကောင်သာ) ---
         @self.on_message(filters.group & filters.new_chat_members)
         async def auto_leave_handler(client, message):
             for member in message.new_chat_members:
                 if member.is_bot:
                     try:
+                        # 🟢 IMPORT FIX: ဒီနေရာမှာမှ Import လုပ်ပါ
                         from maythusharmusic.utils.database import is_clone_bot
                         
-                        # ဝင်လာသူသည် Main Bot သို့မဟုတ် Clone Bot ဟုတ်မဟုတ် စစ်ဆေးသည်
+                        # ဝင်လာသူသည် Main Bot သို့မဟုတ် Clone Bot ဖြစ်ပါက
                         if member.id == config.BOT_ID or await is_clone_bot(member.id):
                             
-                            # အကယ်၍ ဝင်လာသော Bot သည် ကိုယ့် ID မဟုတ်ပါက (တခြားတစ်ကောင် ဝင်လာခြင်း)
+                            # ဝင်လာသူသည် လက်ရှိ Bot (Me) မဟုတ်ပါက (တခြားတစ်ကောင် ဝင်လာခြင်း)
                             if member.id != client.me.id:
                                 await message.reply_text(
                                     f"🤖 **Conflict Detected:** @{member.username} ဝင်လာသောကြောင့် "
@@ -48,47 +50,44 @@ class pisces(Client):
                     except Exception as e:
                         LOGGER(__name__).error(f"Auto-Leave Error: {e}")
 
-        # --- (၂) GLOBAL BOT CONFLICT HANDLER (သီချင်းဖွင့်ရာတွင် တစ်ကောင်တည်းသာ အလုပ်လုပ်ရန်) ---
-        # Text Commands များကိုသာ စစ်ထုတ်ပြီး group=-1 ဖြင့် လမ်းဖြတ်စစ်ဆေးသည်
+        # --- (၂) CONFLICT HANDLER (Bot တစ်ကောင်တည်းသာ စာပြန်ရန်) ---
         @self.on_message(filters.group & ~filters.service, group=-1)
         async def bot_conflict_handler(client, message):
             if not message.text:
                 return 
 
-            # Command ဖြစ်မှသာ စစ်ဆေးမည် (Fixed Syntax)
-            if message.text.startswith(("/", "")):
+            if message.text.startswith(("/", "!")):
                 try:
+                    # 🟢 IMPORT FIX: ဒီနေရာမှာမှ Import လုပ်ပါ
                     from maythusharmusic.utils.database import is_active_bot_auto
                     
                     # ဒီ Group မှာ ငါက Active Bot ဟုတ်-မဟုတ် စစ်ဆေးသည်
-                    # client, chat_id, bot_id (၃) ခုလုံးကို ပို့ပေးရပါမည်
                     if not await is_active_bot_auto(client, message.chat.id, client.me.id):
-                        # ငါက Active မဟုတ်ရင် ဒီ Message ကို Plugin တွေဆီ ဆက်မလွှတ်တော့ပါ
-                        message.stop_propagation()
+                        message.stop_propagation() # Active မဟုတ်ရင် Plugin တွေကို မပို့တော့ပါ
                 except Exception as e:
                     LOGGER(__name__).error(f"Conflict Handler Error: {e}")
 
-        # --- Startup Log Messages ---
+        # --- Startup Logs ---
         try:
             await self.send_message(
                 chat_id=config.LOGGER_ID,
                 text=f"<u><b>» {self.mention} ʙᴏᴛ sᴛᴀʀᴛᴇᴅ :</b><u>\n\nɪᴅ : <code>{self.id}</code>\nɴᴀᴍᴇ : {self.name}\nᴜsᴇʀɴᴀᴍᴇ : @{self.username}",
             )
         except (errors.ChannelInvalid, errors.PeerIdInvalid):
-            LOGGER(__name__).error("Log group access failed. Check your config.LOGGER_ID.")
+            LOGGER(__name__).error("Bot has failed to access the log group/channel.")
         except Exception as ex:
-            LOGGER(__name__).error(f"Startup error: {ex}")
+            LOGGER(__name__).error(f"Bot has failed to access the log group/channel.\n  Reason : {type(ex).__name__}.")
 
         LOGGER(__name__).info(f"Music Bot Started as {self.name}")
 
     async def stop(self):
         await super().stop()
 
-    # --- (၃) CLEAN MODE & MESSAGE OVERRIDES ---
-    # စာပို့တိုင်း Clean Mode ထဲ အလိုအလျောက်ထည့်မည့် Function ဖြစ်သည်
+    # --- (၃) CLEAN MODE & OVERRIDES ---
     async def add_to_clean(self, chat_id, message_id):
         try:
             if chat_id != config.LOGGER_ID:
+                # 🟢 IMPORT FIX: ဒီနေရာမှာမှ Import လုပ်ပါ
                 from maythusharmusic.utils.database import add_clean_message
                 await add_clean_message(chat_id, message_id)
         except:
