@@ -29,17 +29,21 @@ class pisces(Client):
         # ဒီကောင်က အရင်စစ်ပါမယ် (group=-1 ကြောင့် အရင်ဆုံး အလုပ်လုပ်တာပါ)
         
         @self.on_message(filters.group & ~filters.service, group=-1)
+        @self.on_message(filters.group & ~filters.service, group=-1)
         async def bot_conflict_handler(client, message):
-            if message.text and message.text.startswith(("/", "")):
+            # message.text မပါတဲ့ message တွေ (ဥပမာ stickers) ကို ကျော်မယ်
+            if not message.text:
+                return
+                
+            if message.text.startswith(("/", "")):
                 try:
                     from maythusharmusic.utils.database import is_active_bot_auto
                     
-                    # client ကိုပါ argument အဖြစ် ထည့်ပေးလိုက်ပါ
-                    if not await is_active_bot_auto(client, message.chat.id, client.id):
+                    # client, chat_id, bot_id (၃) ခုလုံး ပါရပါမယ်
+                    if not await is_active_bot_auto(client, message.chat.id, client.me.id):
                         message.stop_propagation()
                 except Exception as e:
                     LOGGER(__name__).error(f"Conflict Handler Error: {e}")
-
         try:
             await self.send_message(
                 chat_id=config.LOGGER_ID,
