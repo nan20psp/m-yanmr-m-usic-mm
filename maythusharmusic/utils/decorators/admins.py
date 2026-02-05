@@ -17,8 +17,10 @@ from config import SUPPORT_CHAT, confirmer
 from strings import get_string
 from ..formatters import int_to_alpha
 
+
 def AdminRightsCheck(mystic):
     async def wrapper(client, message):
+        # Maintenance Check
         if await is_maintenance() is False:
             if message.from_user and message.from_user.id not in SUDOERS:
                 return await message.reply_text(
@@ -36,12 +38,12 @@ def AdminRightsCheck(mystic):
             _ = get_string(language)
         except:
             _ = get_string("en")
-            
-        # --- 🟢 ANONYMOUS ADMIN FIX START 🟢 ---
+
+        # --- 🟢 ANONYMOUS ADMIN FIX (အပိုင်း ၁) 🟢 ---
         if message.sender_chat:
-            # Group ကိုယ်တိုင်က ပို့တာဆိုရင် (Anonymous Admin ဖြစ်ရင်) ခွင့်ပြုမည်
+            # Group ကိုယ်တိုင်က ပို့တာဖြစ်ရင် (Anonymous Admin)
             if message.sender_chat.id == message.chat.id:
-                # chat_id သတ်မှတ်ခြင်း (Command တွင် 'c' ပါမပါ စစ်ဆေးခြင်း)
+                # Chat ID သတ်မှတ်ခြင်း
                 if message.command[0][0] == "c":
                     chat_id = await get_cmode(message.chat.id)
                     if chat_id is None:
@@ -52,18 +54,18 @@ def AdminRightsCheck(mystic):
                         return await message.reply_text(_["cplay_4"])
                 else:
                     chat_id = message.chat.id
-                
-                # Active Video Chat ရှိမရှိ စစ်ဆေးပြီး ခွင့်ပြုမည်
+
+                # Video Chat ဖွင့်ထားခြင်း ရှိမရှိ စစ်ဆေးပြီး ခွင့်ပြုမည်
                 if not await is_active_chat(chat_id):
                     return await message.reply_text(_["general_5"])
                 
+                # Anonymous Admin ဖြစ်လို့ တိုက်ရိုက် ခွင့်ပြုလိုက်သည်
                 return await mystic(client, message, _, chat_id)
             else:
-                # Group မဟုတ်ဘဲ တခြား Channel ကနေ လှမ်းပို့ရင်တော့ ပိတ်မယ်
                 return await message.reply_text("Channel messages are not allowed.")
-        # --- 🔴 ANONYMOUS ADMIN FIX END 🔴 ---
+        # ---------------------------------------------
 
-        # Normal User Logic (မူလအတိုင်း)
+        # ပုံမှန် User များအတွက် Logic (message.from_user ရှိမှ လုပ်မည်)
         if message.command[0][0] == "c":
             chat_id = await get_cmode(message.chat.id)
             if chat_id is None:
@@ -74,14 +76,15 @@ def AdminRightsCheck(mystic):
                 return await message.reply_text(_["cplay_4"])
         else:
             chat_id = message.chat.id
-            
+
         if not await is_active_chat(chat_id):
             return await message.reply_text(_["general_5"])
-            
+
         is_non_admin = await is_nonadmin_chat(message.chat.id)
         if not is_non_admin:
             if message.from_user.id not in SUDOERS:
                 try:
+                    # Clone Bot အတွက် client.get_chat_member သုံးထားသည်
                     member = await client.get_chat_member(message.chat.id, message.from_user.id)
                     is_admin = member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR]
                 except:
@@ -92,11 +95,8 @@ def AdminRightsCheck(mystic):
                     if message.from_user.id not in check:
                         if await is_skipmode(message.chat.id):
                             upvote = await get_upvote_count(chat_id)
-                            text = f"""<b>ᴀᴅᴍɪɴ ʀɪɢʜᴛs ɴᴇᴇᴅᴇᴅ</b>
-
-ʀᴇғʀᴇsʜ ᴀᴅᴍɪɴ ᴄᴀᴄʜᴇ ᴠɪᴀ : /reload
-
-» {upvote} ᴠᴏᴛᴇs ɴᴇᴇᴅᴇᴅ ғᴏʀ ᴘᴇʀғᴏʀᴍɪɴɢ ᴛʜɪs ᴀᴄᴛɪᴏɴ."""
+                            text = f"""<b>ᴀᴅᴍɪɴ ʀɪɢʜᴛs ɴᴇᴇᴅᴇᴅ</b>\n\n» {upvote} ᴠᴏᴛᴇs ɴᴇᴇᴅᴇᴅ ғᴏʀ ᴘᴇʀғᴏʀᴍɪɴɢ ᴛʜɪs ᴀᴄᴛɪᴏɴ."""
+                            
                             command = message.command[0]
                             if command[0] == "c":
                                 command = command[1:]
@@ -133,6 +133,7 @@ def AdminRightsCheck(mystic):
 
     return wrapper
 
+
 def AdminActual(mystic):
     async def wrapper(client, message):
         if await is_maintenance() is False:
@@ -152,15 +153,16 @@ def AdminActual(mystic):
             _ = get_string(language)
         except:
             _ = get_string("en")
-            
-        # --- 🟢 ANONYMOUS ADMIN FIX (ACTUAL) 🟢 ---
+
+        # --- 🟢 ANONYMOUS ADMIN FIX (အပိုင်း ၂) 🟢 ---
         if message.sender_chat:
             if message.sender_chat.id == message.chat.id:
+                # Anonymous Admin ဖြစ်ရင် ကျန်တာမစစ်ဘဲ ခွင့်ပြုမည်
                 return await mystic(client, message, _)
             else:
                 return await message.reply_text("Channel messages are not allowed.")
-        # ------------------------------------------
-            
+        # ---------------------------------------------
+
         if message.from_user.id not in SUDOERS:
             try:
                 member = (
@@ -174,8 +176,9 @@ def AdminActual(mystic):
 
     return wrapper
 
+
 def ActualAdminCB(mystic):
-    # Callback Query အတွက် မူလအတိုင်း ထားနိုင်သည် (Anonymous Admin များ Button နှိပ်၍မရပါ)
+    # Callback Query အတွက် Anonymous Fix မလိုပါ (ခလုတ်နှိပ်၍မရသောကြောင့်)
     async def wrapper(client, CallbackQuery):
         if await is_maintenance() is False:
             if CallbackQuery.from_user.id not in SUDOERS:
