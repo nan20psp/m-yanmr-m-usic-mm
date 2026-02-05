@@ -301,6 +301,13 @@ async def get_clone_by_user(user_id: int):
     clone = await clonedb.find_one({"user_id": user_id})
     return clone
 
+async def is_clone_bot(bot_id: int) -> bool:
+    """ပေးလိုက်သော bot_id သည် စနစ်ထဲမှ Clone Bot ဟုတ်မဟုတ် စစ်ဆေးပေးသည်"""
+    # clonedb ထဲတွင် bot ၏ id ကို 'user_id' အဖြစ် သိမ်းထားပါသည်
+    bot = await clonedb.find_one({"user_id": bot_id})
+    return bool(bot)
+
+
 #_____________________________________________________________________#
 # Total Queries on bot
 
