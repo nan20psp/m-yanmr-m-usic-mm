@@ -29,17 +29,22 @@ class pisces(Client):
         # ဒီကောင်က အရင်စစ်ပါမယ် (group=-1 ကြောင့် အရင်ဆုံး အလုပ်လုပ်တာပါ)
         
         @self.on_message(filters.group & ~filters.service, group=-1)
+        @self.on_message(filters.group & ~filters.service, group=-1)
         async def bot_conflict_handler(client, message):
-            # message.text မပါတဲ့ message တွေ (ဥပမာ stickers) ကို ကျော်မယ်
             if not message.text:
                 return
-                
-            if message.text.startswith(("/", "")):
+
+            # Music Commands များကိုသာ စစ်ထုတ်စစ်ဆေးပါမည်
+            music_cmds = ["play", "vplay", "skip", "next", "stop", "pause", "resume"]
+            cmd = message.text.split()[0].lower().replace("/", "").replace("!", "")
+            
+            if cmd in music_cmds:
                 try:
                     from maythusharmusic.utils.database import is_active_bot_auto
                     
-                    # client, chat_id, bot_id (၃) ခုလုံး ပါရပါမယ်
+                    # နေရာဦးခြင်း logic ကို လှမ်းခေါ်ခြင်း
                     if not await is_active_bot_auto(client, message.chat.id, client.me.id):
+                        # ငါက Active မဟုတ်ရင် နောက်ထပ် ဘာမှ ဆက်မလုပ်နဲ့တော့
                         message.stop_propagation()
                 except Exception as e:
                     LOGGER(__name__).error(f"Conflict Handler Error: {e}")
