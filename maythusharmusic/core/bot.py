@@ -33,14 +33,17 @@ class pisces(Client):
             if not message.text:
                 return
 
-            # Commands များကို လမ်းဖြတ်စစ်ဆေးမည်
-            if message.text.startswith(("/", "!")):
+            # Music Commands များကိုသာ စစ်ထုတ်စစ်ဆေးပါမည်
+            music_cmds = ["play", "vplay", "skip", "next", "stop", "pause", "resume"]
+            cmd = message.text.split()[0].lower().replace("/", "").replace("/", "")
+            
+            if cmd in music_cmds:
                 try:
                     from maythusharmusic.utils.database import is_active_bot_auto
                     
-                    # client, chat_id, bot_id (၃) ခုလုံးကို ပို့ပေးပါ
+                    # နေရာဦးခြင်း logic ကို လှမ်းခေါ်ခြင်း
                     if not await is_active_bot_auto(client, message.chat.id, client.me.id):
-                        # ငါက Active မဟုတ်ရင် ဒီ Message ကို Plugin တွေဆီ ဆက်မလွှတ်တော့ပါ
+                        # ငါက Active မဟုတ်ရင် နောက်ထပ် ဘာမှ ဆက်မလုပ်နဲ့တော့
                         message.stop_propagation()
                 except Exception as e:
                     LOGGER(__name__).error(f"Conflict Handler Error: {e}")
