@@ -10,5 +10,5 @@ async def auto_leave_logic(client, message):
                 
                 # ဝင်လာတဲ့ကောင်က ကိုယ်မဟုတ်ဘဲ တခြား clone ဖြစ်နေရင်...
                 if member.id != client.me.id:
-                    await message.reply_text(f"❗ **Conflict detected!**\n@{member.username} ဝင်လာသောကြောင့် ကျွန်တော် @{client.me.username} ထွက်ခွာပါမည်။")
+                    await message.reply_text(f"@{client.me.username} 𝓛𝓮𝓯𝓽 𝓣𝓱𝓮 𝓖𝓻𝓸𝓾𝓹😘.")
                     await client.leave_chat(message.chat.id)
