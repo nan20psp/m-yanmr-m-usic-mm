@@ -49,23 +49,6 @@ class pisces(Client):
                     except Exception as e:
                         LOGGER(__name__).error(f"Auto-Leave Error: {e}")
 
-        # --- (၂) CONFLICT HANDLER (Bot တစ်ကောင်တည်းသာ စာပြန်ရန်) ---
-        @self.on_message(filters.group & ~filters.service, group=-1)
-        async def bot_conflict_handler(client, message):
-            if not message.text:
-                return 
-
-            if message.text.startswith(("/", "")):
-                try:
-                    # 🟢 IMPORT FIX: ဒီနေရာမှာမှ Import လုပ်ပါ
-                    from maythusharmusic.utils.database import is_active_bot_auto
-                    
-                    # ဒီ Group မှာ ငါက Active Bot ဟုတ်-မဟုတ် စစ်ဆေးသည်
-                    if not await is_active_bot_auto(client, message.chat.id, client.me.id):
-                        message.stop_propagation() # Active မဟုတ်ရင် Plugin တွေကို မပို့တော့ပါ
-                except Exception as e:
-                    LOGGER(__name__).error(f"Conflict Handler Error: {e}")
-
         # --- Startup Logs ---
         try:
             await self.send_message(
