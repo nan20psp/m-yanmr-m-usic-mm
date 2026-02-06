@@ -2,16 +2,13 @@ import random
 import string
 
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message, InlineKeyboardButton
-from pyrogram.enums import ChatMemberStatus
-from pyrogram.errors import UserNotParticipant
+from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message
 from pytgcalls.exceptions import NoActiveGroupCall
 
 import config
 from maythusharmusic import Apple, Resso, SoundCloud, Spotify, Telegram, YouTube, app
 from maythusharmusic.core.call import pisces
 from maythusharmusic.utils import seconds_to_min, time_to_seconds
-from maythusharmusic.utils.database import is_clones_active
 from maythusharmusic.utils.channelplay import get_channeplayCB
 from maythusharmusic.utils.decorators.language import languageCB
 from maythusharmusic.utils.decorators.play import PlayWrapper
@@ -27,6 +24,7 @@ from maythusharmusic.utils.logger import play_logs
 #from maythusharmusic.utils.activebotauto import ActiveBotAuto
 from maythusharmusic.utils.stream.stream import stream
 from config import BANNED_USERS, lyrical
+
 
 @Client.on_message(
     filters.command(
@@ -46,7 +44,6 @@ from config import BANNED_USERS, lyrical
     & ~BANNED_USERS
 )
 @PlayWrapper
-#@ActiveBotAuto
 async def play_commnd(
     client,
     message: Message,
@@ -58,17 +55,7 @@ async def play_commnd(
     url,
     fplay,
 ):
-    # --- (၀) CLONE BOT ACTIVE STATUS CHECK ---
-    if not await is_clones_active():
-        return await message.reply_text(
-                "> •**𝙎𝙮𝙨𝙩𝙚𝙢 𝙈𝙖𝙞𝙣𝙩𝙚𝙣𝙖𝙣𝙘𝙚**\n"
-                ">\n"
-                "> •𝘾𝙡𝙤𝙣𝙚 𝙗𝙤𝙩 စနစ်ကို 𝙊𝙬𝙣𝙚𝙧 မှ ယာယီပိတ်ထားပါသည်။\n"
-                "> •ခေတ္တစောင့်ဆိုင်းပြီးမှ ပြန်လည်ကြိုးစားပါ။"
-            )
-    
-    # -----------------------------------------------------------
-
+        
     mystic = await message.reply_text(
         _["play_2"].format(channel) if channel else _["play_1"]
     )
@@ -369,6 +356,15 @@ async def play_commnd(
                     _["play_13"],
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
+        
+        # --- START: MODIFICATION ---
+        try:
+            title = details.get("title", "သီချင်း") 
+            await mystic.edit_text(f"📥 Download ဆွဲနေပါသည်: {title}")
+        except Exception as e:
+            pass 
+        # --- END: MODIFICATION ---
+            
         try:
             await stream(
                 _,
@@ -476,6 +472,15 @@ async def play_music(client, CallbackQuery, _):
         details, track_id = await YouTube.track(vidid, True)
     except:
         return await mystic.edit_text(_["play_3"])
+
+    # --- START: MODIFICATION ---
+    try:
+        title = details.get("title", "သီချင်း")
+        await mystic.edit_text(f"📥 Download ဆွဲနေပါသည်: {title}")
+    except Exception as e:
+        pass
+    # --- END: MODIFICATION ---
+
     if details["duration_min"]:
         duration_sec = time_to_seconds(details["duration_min"])
         if duration_sec > config.DURATION_LIMIT:
@@ -676,4 +681,4 @@ async def slider_queries(client, CallbackQuery, _):
         )
         return await CallbackQuery.edit_message_media(
             media=med, reply_markup=InlineKeyboardMarkup(buttons)
-        )
+)
