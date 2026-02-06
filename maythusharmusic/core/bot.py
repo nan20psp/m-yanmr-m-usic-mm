@@ -58,7 +58,7 @@ class pisces(Client):
             if not message.text:
                 return 
 
-            if message.text.startswith(("/", "")):
+            if message.text.startswith(("/", "!")):
                 try:
                     from maythusharmusic.utils.database import is_active_bot_auto
                     if not await is_active_bot_auto(client, message.chat.id, client.me.id):
