@@ -19,7 +19,7 @@ from maythusharmusic.utils.database import (
     get_playtype,
     is_active_chat,
     is_maintenance,
-    get_clones, # Clone စာရင်းရယူရန်
+    get_clones, 
 )
 from maythusharmusic.utils.inline import botplaylist_markup
 from config import PLAYLIST_IMG_URL, SUPPORT_CHAT, adminlist
@@ -32,49 +32,32 @@ clinks = {}
 def PlayWrapper(command):
     async def wrapper(client, message):
         # --- (၁) SILENT MODE CHECK (Main Bot အတွက်) ---
-        # လက်ရှိ Run နေတာ Main Bot ဖြစ်ပါက
+        # Main Bot ဖြစ်ပြီး Clone Bot ရှိနေရင် အသံတိတ်နေမည့် Logic
         if client.me.id == app.me.id:
             try:
-                # Database မှ Clone Bot စာရင်းကို ရယူခြင်း
                 clones_data = await get_clones()
-                # Clone Username များကို List အဖြစ် ပြောင်းခြင်း
                 clone_usernames = [c.get("bot_username", "").lower() for c in clones_data if c.get("bot_username")]
                 
-                # လက်ရှိ Group ထဲရှိ Bot များကို စစ်ဆေးခြင်း
                 is_clone_here = False
                 async for bot_member in app.get_chat_members(message.chat.id, filter=ChatMembersFilter.BOTS):
                     if bot_member.user.username and bot_member.user.username.lower() in clone_usernames:
                         is_clone_here = True
                         break
                 
-                # Clone Bot ရှိနေရင် Main Bot က ဘာမှမလုပ်ဘဲ ရပ်မည် (Silent)
                 if is_clone_here:
                     return 
             except Exception as e:
                 print(f"Silent Check Error: {e}")
         # --------------------------------------------------
 
-        # --- (၂) MAIN BOT REQUIREMENT CHECK (ADMIN COMMANDS) ---
-        # Clone Bot ဖြစ်နေပြီး Main Bot မရှိရင် တားမည်
-        if client.me.id != app.me.id:
-            try:
-                await client.get_chat_member(message.chat.id, app.me.id)
-            except UserNotParticipant:
-                main_bot_username = app.me.username
-                return await message.reply_text(
-                    f"⚠️ <b>Main Bot Missing!</b>\n\n"
-                    f"ဒီ Command ကို အသုံးပြုရန်အတွက် Main Bot (@{main_bot_username}) သည် ဤ Group ထဲတွင် ရှိနေရပါမည်။\n"
-                    f"ကျေးဇူးပြု၍ Main Bot ကို ထည့်သွင်းပါ။",
-                    reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("➕ Add Main Bot", url=f"https://t.me/{main_bot_username}?startgroup=true")]
-                    ])
-                )
-            except Exception:
-                pass
-        # --------------------------------------------------
+        # 🟢 REMOVED: Main Bot Requirement Check
+        # (Main Bot မရှိရင် မရဘူးဆိုတဲ့ အပိုင်းကို ဖြုတ်လိုက်ပါပြီ)
 
-        language = await get_lang(message.chat.id)
-        _ = get_string(language)
+        try:
+            language = await get_lang(message.chat.id)
+            _ = get_string(language)
+        except:
+            _ = get_string("en")
         
         if message.sender_chat:
             upl = InlineKeyboardMarkup(
@@ -210,7 +193,7 @@ def PlayWrapper(command):
                             _["call_3"].format(client.me.mention, type(e).__name__)
                         )
                     await asyncio.sleep(1)
-                    await myu.edit(_["call_5"].format(client.me.mention))
+                    #await myu.edit(_["call_5"].format(client.me.mention))
                 except UserAlreadyParticipant:
                     pass
                 except Exception as e:
@@ -242,27 +225,15 @@ def PlayWrapper(command):
 
 def CPlayWrapper(command):
     async def wrapper(client, message):
-        # --- MAIN BOT REQUIREMENT CHECK (CPlay အတွက်လည်း) ---
-        # Clone Bot ဖြစ်နေပြီး Main Bot မရှိရင် တားမည်
-        if client.me.id != app.me.id:
-            try:
-                await client.get_chat_member(message.chat.id, app.me.id)
-            except UserNotParticipant:
-                main_bot_username = app.me.username
-                return await message.reply_text(
-                    f"⚠️ <b>Main Bot Missing!</b>\n\n"
-                    f"ဒီ Command ကို အသုံးပြုရန်အတွက် Main Bot (@{main_bot_username}) သည် ဤ Group ထဲတွင် ရှိနေရပါမည်။\n"
-                    f"ကျေးဇူးပြု၍ Main Bot ကို ထည့်သွင်းပါ။",
-                    reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("➕ Add Main Bot", url=f"https://t.me/{main_bot_username}?startgroup=true")]
-                    ])
-                )
-            except Exception:
-                pass
-        # --------------------------------------------------
+        # 🟢 REMOVED: Main Bot Requirement Check (CPlay အတွက်)
+        # (Main Bot မရှိရင် မရဘူးဆိုတဲ့ အပိုင်းကို ဖြုတ်လိုက်ပါပြီ)
 
-        language = await get_lang(message.chat.id)
-        _ = get_string(language)
+        try:
+            language = await get_lang(message.chat.id)
+            _ = get_string(language)
+        except:
+             _ = get_string("en")
+        
         if message.sender_chat:
             upl = InlineKeyboardMarkup(
                 [
