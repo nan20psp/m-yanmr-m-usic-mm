@@ -5,8 +5,6 @@ from pyrogram.enums import ChatMemberStatus, ParseMode
 import config
 from ..logging import LOGGER
 
-# ⚠️ Database Import ကို ဒီနားမှာ မထားပါနဲ့ (Circular Import ဖြစ်စေသည်)
-
 class pisces(Client):
     def __init__(self):
         LOGGER(__name__).info(f"Starting Bot...")
@@ -29,16 +27,14 @@ class pisces(Client):
         # --- (၁) AUTO-LEAVE SYSTEM ---
         @self.on_message(filters.group & filters.new_chat_members)
         async def auto_leave_handler(client, message):
-            # 🟢 FIX: Main Bot ဖြစ်ရင် Auto Leave စနစ်ကို ကျော်သွားမယ် (ဘယ်တော့မှ မထွက်ဘူး)
+            # 🟢 Main Bot ဆိုရင် Auto Leave မလုပ်ဘဲ ကျော်သွားပါ (အမြဲ Group ထဲနေမည်)
             if client.me.id == config.BOT_ID:
                 return
 
-            # Clone Bot များအတွက်သာ အလုပ်လုပ်မည့် Logic
             for member in message.new_chat_members:
                 if member.is_bot:
                     try:
                         from maythusharmusic.utils.database import is_clone_bot
-                        
                         if member.id == config.BOT_ID or await is_clone_bot(member.id):
                             if member.id != client.me.id:
                                 await message.reply_text(
@@ -50,24 +46,23 @@ class pisces(Client):
                     except Exception as e:
                         LOGGER(__name__).error(f"Auto-Leave Error: {e}")
 
-        # --- (၂) CONFLICT HANDLER ---
+        # --- (၂) CONFLICT HANDLER (Silent ဖြစ်စေသော နေရာ) ---
         @self.on_message(filters.group & ~filters.service, group=-1)
         async def bot_conflict_handler(client, message):
-            # 🟢 FIX: Main Bot ဖြစ်ရင် Conflict စစ်ဆေးမှုကို ကျော်သွားမယ် (အမြဲတမ်း Command သုံးလို့ရမယ်)
+            # 🟢 FIX: Main Bot ဆိုရင် ဒီ function ကို ချက်ချင်း ကျော်သွားပါ
+            # (ဒါမှ stop_propagation မလုပ်ဘဲ အောက်က Play plugin တွေဆီ ရောက်ပြီး စာပြန်မှာပါ)
             if client.me.id == config.BOT_ID:
                 return
 
-            # Clone Bot များအတွက်သာ Conflict စစ်ဆေးမည်
+            # Clone Bot များအတွက်သာ Silent ဖြစ်မဖြစ် စစ်ဆေးမည်
             if not message.text:
                 return 
 
             if message.text.startswith(("/", "")):
                 try:
                     from maythusharmusic.utils.database import is_active_bot_auto
-                    
-                    # Clone Bot သည် Active မဟုတ်ပါက Command များကို ရပ်တန့်စေသည်
                     if not await is_active_bot_auto(client, message.chat.id, client.me.id):
-                        message.stop_propagation() 
+                        message.stop_propagation() # Active မဟုတ်ရင် Silent လုပ်သည့်နေရာ
                 except Exception as e:
                     LOGGER(__name__).error(f"Conflict Handler Error: {e}")
 
@@ -77,17 +72,15 @@ class pisces(Client):
                 chat_id=config.LOGGER_ID,
                 text=f"<u><b>» {self.mention} ʙᴏᴛ sᴛᴀʀᴛᴇᴅ :</b><u>\n\nɪᴅ : <code>{self.id}</code>\nɴᴀᴍᴇ : {self.name}\nᴜsᴇʀɴᴀᴍᴇ : @{self.username}",
             )
-        except (errors.ChannelInvalid, errors.PeerIdInvalid):
-            LOGGER(__name__).error("Bot has failed to access the log group/channel.")
-        except Exception as ex:
-            LOGGER(__name__).error(f"Bot has failed to access the log group/channel.\n  Reason : {type(ex).__name__}.")
+        except:
+            LOGGER(__name__).error("Bot failed to access log group.")
 
         LOGGER(__name__).info(f"Music Bot Started as {self.name}")
 
     async def stop(self):
         await super().stop()
 
-    # --- (၃) CLEAN MODE & OVERRIDES ---
+    # --- (၃) CLEAN MODE OVERRIDES ---
     async def add_to_clean(self, chat_id, message_id):
         try:
             if chat_id != config.LOGGER_ID:
